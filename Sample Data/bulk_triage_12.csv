@@ -1,0 +1,13 @@
+description,cmdb_ci
+Reset my password for Active Directory logon,Active Directory
+Exchange mailbox is full and cannot send new mails,Exchange Server
+SAP GUI crash during purchase order entry transaction ME21N,SAP ERP
+Need read permissions for the Shared Marketing Folder,Active Directory
+SAP export spreadsheet function is greyed out for user,SAP ERP
+External emails are bouncing back with delay warnings,Exchange Server
+Web portal showing database connection timeout error page,Web Portal
+Stale locking entry in SM12 for material master records,SAP ERP
+Active directory profile load failure during Windows login,Active Directory
+Outlook PST archive file is corrupt and won't mount,Exchange Server
+Internal web portal dashboard search returns no results,Web Portal
+Billing document posting failed due to lock on SAP tables,SAP ERP

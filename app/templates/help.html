@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}User Manual - Project Aura{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Project Aura User Manual</h1>
+    <p>Complete operational guide, interface descriptions, navigation details, and sample transactions for the offline triage hub.</p>
+</div>
+
+<div class="zone-card" style="display: block; padding: 2.5rem; margin-bottom: 2rem;">
+    <h2 style="border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; margin-bottom: 1.5rem; color: var(--text-color);">1. Application Overview</h2>
+    <p>Project Aura is a secure, 100% offline-first IT incident analysis and triage assistant. By integrating local LLMs (Google Gemma-2-2B-it or Phi-3.1-mini-4k) with ChromaDB (vector database), the platform parses historical incident ticket databases, digests corporate manuals, classifies tickets, and synthesizes step-by-step resolution guides safely within your local environment.</p>
+</div>
+
+<div class="zone-card" style="display: block; padding: 2.5rem; margin-bottom: 2rem;">
+    <h2 style="border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; margin-bottom: 1.5rem; color: var(--text-color);">2. Main Navigation & Screen Sections</h2>
+    <p>Use the persistent horizontal navigation bar to navigate between the four core pages:</p>
+    
+    <table class="data-table" style="margin-top: 1rem;">
+        <thead>
+            <tr>
+                <th style="width: 25%;">Screen</th>
+                <th style="width: 75%;">Purpose & Features</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Home Dashboard</strong></td>
+                <td>Provides high-level KPIs representing ingestion counts, knowledge base files, active LLM status, search success rates, and compute/latency profiling metrics (AVG, P90, per-incident tasks).</td>
+            </tr>
+            <tr>
+                <td><strong>Knowledge Management</strong></td>
+                <td>Allows drag-and-drop or file uploads of support ticket CSV files and technical manuals (PDF/DOCX). Displays active file status catalogs.</td>
+            </tr>
+            <tr>
+                <td><strong>Macro Categorization</strong></td>
+                <td>Triggers background LLM tasks to batch-classify historical tickets. Displays volume breakdown graphs and descriptions of operational taxonomies.</td>
+            </tr>
+            <tr>
+                <td><strong>Search & Triage</strong></td>
+                <td>The primary interactive workspace. Includes tabs for single-query search & RAG guide compilation, and bulk triage processing using CSV upload.</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<div class="zone-card" style="display: block; padding: 2.5rem; margin-bottom: 2rem;">
+    <h2 style="border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; margin-bottom: 1.5rem; color: var(--text-color);">3. Screen Breakdown & How-to-Use</h2>
+
+    <h3 style="margin-top: 1.5rem; margin-bottom: 0.5rem; color: var(--text-color);">3.1 Knowledge Management Screen</h3>
+    <p>Upload files to feed knowledge context to the vector database:</p>
+    <ol style="margin-left: 2rem; margin-bottom: 1rem; line-height: 1.6;">
+        <li>Go to <strong>Knowledge Management</strong> in the nav bar.</li>
+        <li>To ingest incident logs: Click "Choose File" on the CSV uploader, select your tickets dataset (containing columns: <code>number</code>, <code>short_description</code>, <code>description</code>, <code>comments_and_work_notes</code>, <code>closed_note</code>, <code>assigned_to</code>, <code>assignment_group</code>, and <code>cmdb_ci</code>), then click <strong>Ingest Incidents CSV</strong>.</li>
+        <li>To upload documentation: Select a DOCX or PDF file (e.g. active_directory_guide.docx), choose the matching CMDB CI application it applies to, and click <strong>Ingest Documentation</strong>.</li>
+        <li>Check processing counts and status in the <strong>Active Documents Catalog</strong> at the bottom.</li>
+    </ol>
+
+    <h3 style="margin-top: 2rem; margin-bottom: 0.5rem; color: var(--text-color);">3.2 Macro Categorization Screen</h3>
+    <p>Classify ticket descriptions into operational taxonomies:</p>
+    <ol style="margin-left: 2rem; margin-bottom: 1rem; line-height: 1.6;">
+        <li>Go to <strong>Macro Categorization</strong> in the nav bar.</li>
+        <li>If there are unclassified incidents, click the <strong>Run Categorization</strong> button. The background classifier will batch process 15 records at a time.</li>
+        <li>View progress in real time. Once finished, the dashboard will refresh.</li>
+        <li>Use filters at the top (Start Date, End Date, CMDB CI) and click <strong>Apply Filter</strong> to segment the charts and tables. Click <strong>Export CSV</strong> to save the categorized list.</li>
+    </ol>
+
+    <h3 style="margin-top: 2rem; margin-bottom: 0.5rem; color: var(--text-color);">3.3 Search & Triage (RAG) Screen</h3>
+    <p>Execute single and bulk RAG tasks:</p>
+    <ol style="margin-left: 2rem; margin-bottom: 1rem; line-height: 1.6;">
+        <li>Go to <strong>Search & Triage</strong> in the nav bar.</li>
+        <li><strong>Single Query:</strong> Enter an issue description on the left (e.g., <em>"User account locked out after three password attempts"</em>), choose the CMDB CI application (e.g., <code>Active Directory</code>), and click <strong>Search & Synthesize Guide</strong>.</li>
+        <li>Observe results on the right:
+            <ul>
+                <li><strong>Assistant Resolution Guide:</strong> Dynamically compiles instructions from matching manuals in formatted Markdown.</li>
+                <li><strong>Citations:</strong> Links to downloaded source PDFs or Word documents.</li>
+                <li><strong>Deduplicated Matched Incidents:</strong> Displays historical tickets, match percentages, assigned personnel, assignment groups, and closed notes.</li>
+            </ul>
+        </li>
+        <li><strong>Bulk Triage:</strong> Switch to the "Bulk Triage CSV" tab, upload a CSV containing <code>description</code> and <code>cmdb_ci</code> columns (like the sample CSVs provided), and review the compiled batch guidelines displayed immediately below.</li>
+    </ol>
+</div>
+
+<div class="zone-card" style="display: block; padding: 2.5rem; margin-bottom: 2rem;">
+    <h2 style="border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; margin-bottom: 1.5rem; color: var(--text-color);">4. Sample Transaction Flows</h2>
+    
+    <div style="background-color: var(--bg-color); border: 1px solid var(--border-color); border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem;">
+        <h4 style="margin-top: 0; margin-bottom: 0.5rem; color: var(--text-color);">Scenario A: Standard Active Directory Password Reset</h4>
+        <p><strong>Query:</strong> "How do I unlock account or reset expired password for Active Directory domain?"</p>
+        <p><strong>CMDB CI:</strong> <code>Active Directory</code></p>
+        <p><strong>Expected Output:</strong> The system identifies manuals matching active directory guides, parses steps (like opening ADUC, right-clicking user accounts, and resetting flags), extracts closed notes from past tickets, and displays the assigned technicians who handled AD lockouts.</p>
+    </div>
+
+    <div style="background-color: var(--bg-color); border: 1px solid var(--border-color); border-radius: 8px; padding: 1.5rem;">
+        <h4 style="margin-top: 0; margin-bottom: 0.5rem; color: var(--text-color);">Scenario B: Bulk Triage Test Ingestion</h4>
+        <p><strong>Action:</strong> Go to the Bulk Triage tab and upload <code>bulk_triage_7.csv</code>.</p>
+        <p><strong>Expected Output:</strong> The screen displays a scrollable card stack detailing seven records. Each card shows the ticket query, matched historical incidents list, RAG resolution summary parsed using local model, and clickable citation links to open local documentation files.</p>
+    </div>
+</div>
+{% endblock %}

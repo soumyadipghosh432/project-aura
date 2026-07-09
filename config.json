@@ -1,0 +1,20 @@
+{
+  "models": [
+    {
+      "name": "gemma-2-2b-it-Q4_K_M.gguf",
+      "active": true,
+      "fallback": false
+    },
+    {
+      "name": "gemma-4-E2B_q4_0-it.gguf",
+      "active": false,
+      "fallback": false
+    },
+    {
+      "name": "Phi-3.1-mini-4k-instruct-Q4_K_M.gguf",
+      "active": false,
+      "fallback": true
+    }
+  ],
+  "batch_limit": 1500
+}

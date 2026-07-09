@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Project Aura{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Operational System Analytics</h1>
+    <p>Real-time compute profiling, database counts, and model indicators for this offline workstation.</p>
+</div>
+
+<!-- Active Model Indicator -->
+<div class="alert-warning" style="display: flex; justify-content: space-between; align-items: center;">
+    <div>
+        <strong>Active Local Model:</strong> <code>{{ status.active_model }}</code> 
+        {% if status.is_fallback %}
+        <span style="color: #ff3333; font-weight: bold;">(SILENT MEMORY FALLBACK ENGAGED)</span>
+        {% else %}
+        <span style="color: #00aa00; font-weight: bold;">(PRIMARY OPERATIONAL)</span>
+        {% endif %}
+    </div>
+    <div>
+        <strong>Environment:</strong> 100% Offline / Air-Gapped (CPU-Only)
+    </div>
+</div>
+
+<!-- Metrics Dashboard Grid -->
+<div class="analytics-grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
+    <div class="metric-card">
+        <div class="metric-val" style="font-size: 1.7rem;">
+            {{ status.inc_processed }} <span style="font-size: 0.85rem; color: var(--accent-color);">/ {{ status.inc_pending }} / {{ status.inc_failed }}</span>
+        </div>
+        <div class="metric-lbl">Incidents (Processed/Pending/Failed)</div>
+    </div>
+    
+    <div class="metric-card">
+        <div class="metric-val" style="font-size: 1.7rem;">
+            {{ status.kb_processed }} <span style="font-size: 0.85rem; color: #ff3333;">/ {{ status.kb_failed }}</span>
+        </div>
+        <div class="metric-lbl">Knowledge Docs (Processed/Failed)</div>
+    </div>
+    
+    <div class="metric-card">
+        <div class="metric-val" style="font-size: 1.7rem;">
+            {{ status.total_searches }} <span style="font-size: 0.85rem; color: var(--accent-color);">/ {{ status.success_rate }}% Success</span>
+        </div>
+        <div class="metric-lbl">Total Searches / Success Rate</div>
+    </div>
+    
+    <div class="metric-card">
+        <div class="metric-val" style="font-size: 1.45rem; display: flex; align-items: baseline; gap: 0.4rem; justify-content: center; font-weight: 700;">
+            <span>AVG: {{ status.avg_latency_sec }}s</span>
+            <span style="font-size: 0.85rem; color: var(--accent-color); font-weight: normal;">| P90: {{ status.p90_latency_sec }}s</span>
+        </div>
+        <div class="metric-lbl">Search & RAG Synthesis Queries Latency</div>
+    </div>
+    
+    <div class="metric-card">
+        <div class="metric-val" style="font-size: 1.7rem;">{{ status.avg_ingest_sec }}s</div>
+        <div class="metric-lbl">Per-Incident Ingestion Latency</div>
+    </div>
+    
+    <div class="metric-card">
+        <div class="metric-val" style="font-size: 1.7rem;">{{ status.avg_categ_sec }}s</div>
+        <div class="metric-lbl">Per-Incident Categorization Latency</div>
+    </div>
+</div>
+
+<!-- Homepage Zones split -->
+<div class="home-split">
+    <!-- Left Zone: Knowledge Management -->
+    <div class="zone-card">
+        <div>
+            <h3 class="zone-title">Knowledge Management</h3>
+            <p style="margin-top: 1rem;">Ingest raw data assets, review files cataloged in database storage, and trigger background indexing pipelines to vectorize unstructured incident logs.</p>
+        </div>
+        <div class="zone-links">
+            <a href="/knowledge" class="zone-btn">Open Knowledge Curator</a>
+        </div>
+    </div>
+    
+    <!-- Right Zone: Analysis -->
+    <div class="zone-card">
+        <div>
+            <h3 class="zone-title">Analysis & Synthesis</h3>
+            <p style="margin-top: 1rem;">Execute macro categorization over unresolved tickets, run single incident search queries with context synthesis (RAG), and process bulk triages.</p>
+        </div>
+        <div class="zone-links" style="display: grid; grid-template-columns: 1fr; gap: 0.8rem;">
+            <a href="/categorization" class="zone-btn" style="background-color: var(--accent-color); border-color: var(--accent-color);">Macro Categorization Engine</a>
+            <a href="/guidance" class="zone-btn">Search & Guidance Locator</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

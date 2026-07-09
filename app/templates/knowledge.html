@@ -1,0 +1,289 @@
+{% extends "base.html" %}
+
+{% block title %}Knowledge Management - Project Aura{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Knowledge Management</h1>
+    <p>Ingest incident csv datasets and upload documentation manuals to sync the local semantic search indexes.</p>
+</div>
+
+<div class="home-split">
+    <!-- Section 1: Historical Incidents Ingestion -->
+    <div class="zone-card" style="justify-content: flex-start;">
+        <h3 class="zone-title">Incident Ingestion</h3>
+        <p style="margin-top: 0.5rem; margin-bottom: 1.5rem;">Upload ticket data in <code>.csv</code> format. File schema validation enforces required columns case-insensitively.</p>
+        
+        <form id="incident-form" enctype="multipart/form-data">
+            <div class="form-group">
+                <label class="form-label" for="incident-file">Select CSV File:</label>
+                <input type="file" id="incident-file" name="file" accept=".csv" class="form-input" required>
+            </div>
+            <button type="submit" class="btn-primary" style="width: 100%;">Upload & Index Incidents</button>
+        </form>
+        
+        <div id="incident-status" style="margin-top: 1.5rem; display: none;">
+            <div id="incident-status-alert" class="alert-warning" style="margin-bottom: 0;">
+                Processing dataset. Vectorizing text chunks in the background...
+            </div>
+        </div>
+        
+        <div style="margin-top: 2rem; border-top: 1px solid var(--border-color); padding-top: 1.5rem;">
+            <h4>Relational DB Index Status:</h4>
+            <div style="display: flex; justify-content: space-around; margin-top: 1rem; text-align: center;">
+                <div>
+                    <h3 id="lbl-pending">{{ pending_incs }}</h3>
+                    <p style="font-size: 0.8rem; text-transform: uppercase;">Pending</p>
+                </div>
+                <div>
+                    <h3 id="lbl-processed">{{ processed_incs }}</h3>
+                    <p style="font-size: 0.8rem; text-transform: uppercase;">Vectorized</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Remove Incident Records Section -->
+        <div style="margin-top: 2rem; border-top: 1px solid var(--border-color); padding-top: 1.5rem; width: 100%;">
+            <h4>Remove Incident Records:</h4>
+            <p style="font-size: 0.82rem; color: var(--accent-color); margin-bottom: 0.8rem; line-height: 1.4;">Enter comma-separated ticket numbers (e.g. <code>INC0000001, INC0000002</code>) to purge from database and vector index.</p>
+            <form id="remove-inc-form">
+                <div class="form-group">
+                    <input type="text" id="remove-inc-input" class="form-input" placeholder="INC0000001, INC0000002" required>
+                </div>
+                <button type="submit" id="remove-inc-btn" class="btn-primary" style="width: 100%; background-color: #ff3333; border-color: #ff3333;">Remove Incidents</button>
+            </form>
+            <div id="remove-inc-status" style="margin-top: 1rem; display: none;" class="alert-warning"></div>
+        </div>
+    </div>
+
+    <!-- Section 2: Knowledge Base Document Curator -->
+    <div class="zone-card" style="justify-content: flex-start;">
+        <h3 class="zone-title">Knowledge Base Curator</h3>
+        <p style="margin-top: 0.5rem; margin-bottom: 1.5rem;">Upload operational manuals, technical guides, or release notes in <code>.docx</code> or <code>.pdf</code> format.</p>
+        
+        <form id="knowledge-form" enctype="multipart/form-data">
+            <div class="form-group">
+                <label class="form-label" for="knowledge-file">Select Document (.pdf, .docx):</label>
+                <input type="file" id="knowledge-file" name="file" accept=".pdf,.docx" class="form-input" required>
+            </div>
+            <button type="submit" class="btn-primary" style="width: 100%;">Upload & Vectorize Document</button>
+        </form>
+        
+        <div id="knowledge-status" style="margin-top: 1.5rem; display: none;">
+            <div id="knowledge-status-alert" class="alert-warning" style="margin-bottom: 0;">
+                Ingesting and compiling document embeddings...
+            </div>
+        </div>
+        
+        <div style="margin-top: 2rem; border-top: 1px solid var(--border-color); padding-top: 1.5rem; width: 100%;">
+            <h4>Active Documents Catalog Summary:</h4>
+            <div style="display: flex; gap: 1.5rem; margin-top: 1rem; margin-bottom: 1.5rem;">
+                <div class="metric-card" style="flex: 1; padding: 1rem; box-shadow: none; border-color: var(--border-color); background-color: var(--bg-color);">
+                    <h3 style="margin: 0; font-size: 1.8rem;">{{ total_docs_count }}</h3>
+                    <p style="font-size: 0.75rem; text-transform: uppercase; margin: 0;">Total Active Docs</p>
+                </div>
+                <div class="metric-card" style="flex: 1; padding: 1rem; box-shadow: none; border-color: var(--border-color); background-color: var(--bg-color);">
+                    <h3 style="margin: 0; font-size: 1.8rem; color: {% if failed_docs_count > 0 %}#ff3333{% else %}inherit{% endif %};">{{ failed_docs_count }}</h3>
+                    <p style="font-size: 0.75rem; text-transform: uppercase; margin: 0;">Failed Ingestions</p>
+                </div>
+            </div>
+
+            <h4>Uploaded Documents:</h4>
+            <div class="table-wrapper" style="margin-bottom: 1rem; max-height: 250px; overflow-y: auto;">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Filename</th>
+                            <th style="width: 15%; text-align: center;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="docs-table-body">
+                        {% for doc in all_docs %}
+                        <tr>
+                            <td><strong>{{ doc.filename }}</strong></td>
+                            <td style="text-align: center;">
+                                <button class="btn-primary remove-doc-btn" data-filename="{{ doc.filename }}" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; background-color: #ff3333; border-color: #ff3333; height: auto; display: inline-block;">Remove</button>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="2" style="text-align: center; color: var(--accent-color);">No documents cataloged in database storage.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination Controls -->
+            {% if total_pages > 1 %}
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
+                <a href="/knowledge?doc_page={{ current_page - 1 }}" class="btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; text-decoration: none; display: {% if current_page > 1 %}inline-block{% else %}none{% endif %};">Previous</a>
+                <span style="font-size: 0.9rem; color: var(--accent-color);">Page {{ current_page }} of {{ total_pages }}</span>
+                <a href="/knowledge?doc_page={{ current_page + 1 }}" class="btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; text-decoration: none; display: {% if current_page < total_pages %}inline-block{% else %}none{% endif %};">Next</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Handle CSV incident upload
+    const incidentForm = document.getElementById('incident-form');
+    const incidentStatus = document.getElementById('incident-status');
+    const incidentAlert = document.getElementById('incident-status-alert');
+    const lblPending = document.getElementById('lbl-pending');
+    const lblProcessed = document.getElementById('lbl-processed');
+    
+    incidentForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const fileInput = document.getElementById('incident-file');
+        if (!fileInput.files[0]) return;
+        
+        incidentStatus.style.display = 'block';
+        incidentAlert.className = 'alert-warning';
+        incidentAlert.textContent = 'Uploading file. Validating schemas...';
+        
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+        
+        try {
+            const res = await fetch('/api/ingest/incidents', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+            if (res.ok && data.status === 'SUCCESS') {
+                incidentAlert.style.borderLeftColor = '#00aa00';
+                incidentAlert.textContent = data.message + ' Vector indexing running in background.';
+                fileInput.value = '';
+                
+                // Poll status briefly
+                setTimeout(() => {
+                    location.reload();
+                }, 2000);
+            } else {
+                throw new Error(data.detail || 'Failed to ingest file.');
+            }
+        } catch (err) {
+            incidentAlert.style.borderLeftColor = '#ff3333';
+            incidentAlert.textContent = 'Error: ' + err.message;
+        }
+    });
+
+    // Handle Knowledge Document upload
+    const knowledgeForm = document.getElementById('knowledge-form');
+    const knowledgeStatus = document.getElementById('knowledge-status');
+    const knowledgeAlert = document.getElementById('knowledge-status-alert');
+    
+    knowledgeForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const fileInput = document.getElementById('knowledge-file');
+        if (!fileInput.files[0]) return;
+        
+        knowledgeStatus.style.display = 'block';
+        knowledgeAlert.className = 'alert-warning';
+        knowledgeAlert.textContent = 'Uploading document. Generating vectors...';
+        
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+        
+        try {
+            const res = await fetch('/api/ingest/knowledge', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+            if (res.ok) {
+                knowledgeAlert.style.borderLeftColor = '#00aa00';
+                knowledgeAlert.textContent = data.message;
+                fileInput.value = '';
+                
+                // Refresh to populate list
+                setTimeout(() => {
+                    location.reload();
+                }, 1500);
+            } else {
+                throw new Error(data.detail || 'Ingestion failed.');
+            }
+        } catch (err) {
+            knowledgeAlert.style.borderLeftColor = '#ff3333';
+            knowledgeAlert.textContent = 'Error: ' + err.message;
+        }
+    });
+
+    // Handle Document Deletion
+    document.querySelectorAll('.remove-doc-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const filename = btn.getAttribute('data-filename');
+            if (!confirm(`Are you sure you want to delete "${filename}"? This will clear all its vector chunks and postgres records permanently.`)) {
+                return;
+            }
+            
+            btn.disabled = true;
+            try {
+                const res = await fetch('/api/knowledge/delete-doc', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ filename })
+                });
+                const data = await res.json();
+                if (res.ok && data.status === 'SUCCESS') {
+                    alert(data.message);
+                    location.reload();
+                } else {
+                    alert('Deletion failed: ' + (data.detail || data.message));
+                    btn.disabled = false;
+                }
+            } catch (err) {
+                alert('Connection error: ' + err.message);
+                btn.disabled = false;
+            }
+        });
+    });
+
+    // Handle Incident Records Deletion
+    const removeIncForm = document.getElementById('remove-inc-form');
+    const removeIncStatus = document.getElementById('remove-inc-status');
+    const removeIncBtn = document.getElementById('remove-inc-btn');
+
+    removeIncForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const incInput = document.getElementById('remove-inc-input').value.trim();
+        if (!incInput) return;
+
+        if (!confirm(`Are you sure you want to delete these incidents: "${incInput}"? This will clear them from postgres and ChromaDB permanently.`)) {
+            return;
+        }
+
+        removeIncBtn.disabled = true;
+        removeIncStatus.style.display = 'block';
+        removeIncStatus.className = 'alert-warning';
+        removeIncStatus.textContent = 'Processing request...';
+
+        try {
+            const res = await fetch('/api/incidents/delete-records', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ incidents: incInput })
+            });
+            const data = await res.json();
+            if (res.ok && data.status === 'SUCCESS') {
+                removeIncStatus.style.borderLeftColor = '#00aa00';
+                removeIncStatus.textContent = data.message;
+                document.getElementById('remove-inc-input').value = '';
+                setTimeout(() => {
+                    location.reload();
+                }, 2000);
+            } else {
+                throw new Error(data.detail || data.message || 'Deletion failed.');
+            }
+        } catch (err) {
+            removeIncStatus.style.borderLeftColor = '#ff3333';
+            removeIncStatus.textContent = 'Error: ' + err.message;
+            removeIncBtn.disabled = false;
+        }
+    });
+</script>
+{% endblock %}

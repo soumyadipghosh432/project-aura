@@ -1,0 +1,388 @@
+{% extends "base.html" %}
+
+{% block title %}Search & Guidance - Project Aura{% endblock %}
+
+{% block content %}
+<style>
+    .loading-spinner {
+        display: inline-block;
+        width: 1.25rem;
+        height: 1.25rem;
+        border: 2.5px solid rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        border-top-color: var(--accent-color);
+        animation: spin 0.8s linear infinite;
+        vertical-align: middle;
+    }
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+    .progress-bar-container {
+        width: 100%;
+        background-color: var(--border-color);
+        border-radius: 4px;
+        height: 8px;
+        overflow: hidden;
+        margin-top: 0.8rem;
+        margin-bottom: 0.5rem;
+    }
+    .progress-bar-fill {
+        height: 100%;
+        background-color: var(--accent-color);
+        width: 0%;
+        transition: width 0.3s ease;
+    }
+</style>
+
+<div class="page-header">
+    <h1 class="page-title">Incident Guidance & Triage</h1>
+    <p>Perform real-time context retrieval over historical incident tickets and documentation assets to resolve outages.</p>
+</div>
+
+<!-- Tab System Selector -->
+<div style="display: flex; gap: 1rem; margin-bottom: 2rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem;">
+    <button id="btn-tab-single" class="btn-primary" style="background-color: var(--text-color); color: var(--bg-color);">Single Incident Guidance</button>
+    <button id="btn-tab-bulk" class="btn-primary" style="background-color: transparent; color: var(--text-color); border-color: var(--border-color);">Bulk Incident Triage</button>
+</div>
+
+<!-- Tab 1: Single Guidance Panel -->
+<div id="panel-single" style="display: block;">
+    <div class="guidance-layout">
+        <div class="guidance-panel" style="justify-content: flex-start;">
+            <h3>Input Parameters</h3>
+            <form id="single-search-form">
+                <div class="form-group">
+                    <label class="form-label" for="query-text">Issue Description / Error Text:</label>
+                    <textarea id="query-text" class="form-textarea" rows="4" placeholder="Enter error message, exception stacktrace, or issue symptoms..." required></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="cmdb-ci">Target Configuration Item (CMDB CI):</label>
+                    <select id="cmdb-ci" class="form-select" required>
+                        <option value="" disabled selected>Select application identifier...</option>
+                        {% for ci in cmdb_cis %}
+                        <option value="{{ ci }}">{{ ci }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="match-threshold">Minimum Match Threshold (%):</label>
+                    <input type="number" id="match-threshold" class="form-input" min="0" max="100" value="10">
+                </div>
+                
+                <button type="submit" id="search-btn" class="btn-primary" style="width: 100%;">Search & Synthesize Guide</button>
+            </form>
+        </div>
+        
+        <div class="guidance-panel" style="justify-content: flex-start;">
+            <h3>Assistant Resolution Guide</h3>
+            <p>Unified knowledge-base synthesis (RAG) compiled from matching technical documentation files.</p>
+            
+            <div id="rag-response-container" class="rag-box" style="margin-bottom: 1.5rem;">
+                <span style="color: var(--accent-color); font-style: italic;">Enter issue details on the left and click search to generate resolution guidelines.</span>
+            </div>
+            
+            <h4>Citations:</h4>
+            <div id="citations-container" class="citation-list">
+                <span style="font-size: 0.9rem; color: var(--accent-color); font-style: italic;">None.</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Raw matched Incidents Results Section -->
+    <div class="zone-card" style="margin-top: 2rem; display: block;">
+        <h3>Matching Historical Incidents</h3>
+        <p>Top 5 matching tickets retrieved directly from database storage. Bypasses LLM summarization to preserve latency.</p>
+        
+        <div id="incidents-container" style="margin-top: 1.5rem;">
+            <div style="text-align: center; color: var(--accent-color); padding: 2rem;">No search executed yet.</div>
+        </div>
+    </div>
+</div>
+
+<!-- Tab 2: Bulk Triage Panel -->
+<div id="panel-bulk" style="display: none;">
+    <div class="zone-card" style="margin-bottom: 2rem; display: block;">
+        <h3>Bulk Ingestion</h3>
+        <p>Upload a CSV file containing columns <code>description</code> and <code>cmdb_ci</code> to process up to <strong>20 incidents</strong> simultaneously.</p>
+        
+        <form id="bulk-form" enctype="multipart/form-data" style="margin-top: 1.5rem;">
+            <div class="form-group">
+                <label class="form-label" for="bulk-file">Select Bulk CSV File:</label>
+                <input type="file" id="bulk-file" name="file" accept=".csv" class="form-input" required>
+            </div>
+            <button type="submit" id="bulk-submit-btn" class="btn-primary" style="width: 100%;">Execute Bulk Triage</button>
+        </form>
+        
+        <div id="bulk-status" style="margin-top: 1.5rem; display: none; padding: 1.25rem; background-color: var(--bg-color); border: 1px solid var(--border-color); border-radius: 8px;">
+            <div style="display: flex; align-items: center; gap: 0.6rem; font-weight: 600; color: var(--text-color);">
+                <span class="loading-spinner" style="border-top-color: var(--accent-color); margin-right: 5px;"></span>
+                <span>Processing batch queries. Querying database and compiling RAG models...</span>
+            </div>
+            <div id="bulk-progress-text" style="font-size: 0.85rem; color: var(--accent-color); font-weight: 600; margin-top: 0.8rem;">0 of 0 completed (0%)</div>
+            <div class="progress-bar-container">
+                <div id="bulk-progress-fill" class="progress-bar-fill"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="bulk-results-section" style="display: none;">
+        <h3>Triaged Incidents Summary</h3>
+        <p style="margin-bottom: 2rem;">Batch analysis breakdown and resolution guides.</p>
+        <div id="bulk-results-container" style="display: flex; flex-direction: column; gap: 2rem;">
+            <!-- Appends items here -->
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/marked.min.js"></script>
+<script>
+    // Tab Toggling
+    const tabSingleBtn = document.getElementById('btn-tab-single');
+    const tabBulkBtn = document.getElementById('btn-tab-bulk');
+    const panelSingle = document.getElementById('panel-single');
+    const panelBulk = document.getElementById('panel-bulk');
+    
+    tabSingleBtn.addEventListener('click', () => {
+        panelSingle.style.display = 'block';
+        panelBulk.style.display = 'none';
+        tabSingleBtn.style.backgroundColor = 'var(--text-color)';
+        tabSingleBtn.style.color = 'var(--bg-color)';
+        tabSingleBtn.style.borderColor = 'var(--text-color)';
+        tabBulkBtn.style.backgroundColor = 'transparent';
+        tabBulkBtn.style.color = 'var(--text-color)';
+        tabBulkBtn.style.borderColor = 'var(--border-color)';
+    });
+    
+    tabBulkBtn.addEventListener('click', () => {
+        panelSingle.style.display = 'none';
+        panelBulk.style.display = 'block';
+        tabBulkBtn.style.backgroundColor = 'var(--text-color)';
+        tabBulkBtn.style.color = 'var(--bg-color)';
+        tabBulkBtn.style.borderColor = 'var(--text-color)';
+        tabSingleBtn.style.backgroundColor = 'transparent';
+        tabSingleBtn.style.color = 'var(--text-color)';
+        tabSingleBtn.style.borderColor = 'var(--border-color)';
+    });
+
+    // Single Search Form Ingestion
+    const singleForm = document.getElementById('single-search-form');
+    const searchBtn = document.getElementById('search-btn');
+    const ragBox = document.getElementById('rag-response-container');
+    const citationsBox = document.getElementById('citations-container');
+    const incsBox = document.getElementById('incidents-container');
+    
+    singleForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const text = document.getElementById('query-text').value;
+        const ci = document.getElementById('cmdb-ci').value;
+        const threshold = document.getElementById('match-threshold').value;
+        
+        searchBtn.disabled = true;
+        searchBtn.innerHTML = '<span class="loading-spinner" style="border-top-color: #ffffff; margin-right: 8px;"></span>Retrieving & Generating...';
+        ragBox.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 120px; gap: 0.6rem;"><span class="loading-spinner" style="width: 1.5rem; height: 1.5rem;"></span><span style="color: var(--accent-color); font-style: italic;">Consulting documentation and local synthesis models...</span></div>';
+        citationsBox.innerHTML = '<span style="font-size: 0.9rem; color: var(--accent-color); font-style: italic;">...</span>';
+        incsBox.innerHTML = '<div style="text-align: center; color: var(--accent-color); padding: 2rem;"><span class="loading-spinner" style="margin-right: 8px;"></span>Searching database files...</div>';
+        
+        try {
+            const res = await fetch(`/api/analysis/guidance?query_text=${encodeURIComponent(text)}&cmdb_ci=${encodeURIComponent(ci)}&min_threshold=${threshold}`);
+            const data = await res.json();
+            
+            if (res.ok) {
+                // Populate RAG response
+                ragBox.innerHTML = marked.parse(data.rag_response || "No guidelines synthesized.");
+                
+                // Populate Citations
+                citationsBox.innerHTML = '';
+                const citations = data.citations || [];
+                if (citations.length > 0) {
+                    citations.forEach(fn => {
+                        const link = document.createElement('a');
+                        link.className = 'citation-link';
+                        link.href = `/files/${fn}`;
+                        link.download = fn;
+                        link.textContent = fn;
+                        citationsBox.appendChild(link);
+                    });
+                } else {
+                    citationsBox.innerHTML = '<span style="font-size: 0.9rem; color: var(--accent-color); font-style: italic;">None.</span>';
+                }
+                
+                // Populate Matched Incidents
+                incsBox.innerHTML = '';
+                const incs = data.matched_incidents || [];
+                if (incs.length > 0) {
+                    incs.forEach(inc => {
+                        const card = document.createElement('div');
+                        card.className = 'inc-card';
+                        card.innerHTML = `
+                            <div class="inc-header">
+                                <strong>Ticket Number:</strong> ${inc.number}
+                                <span class="inc-score">Match Score: ${inc.match_score}%</span>
+                            </div>
+                            <div style="font-size: 0.9rem; margin-top: 0.5rem;">
+                                <p style="margin-bottom: 0.2rem; color: var(--text-color);"><strong>Short Description:</strong> ${inc.short_desc}</p>
+                                <p style="margin-bottom: 0.2rem;"><strong>Description:</strong> ${inc.description || 'None'}</p>
+                                <div style="display: flex; gap: 1.5rem; margin-bottom: 0.2rem; font-size: 0.85rem; color: var(--accent-color);">
+                                    <span><strong>Assigned To:</strong> ${inc.assigned_to || 'Unassigned'}</span>
+                                    <span><strong>Assignment Group:</strong> ${inc.assignment_group || 'None'}</span>
+                                </div>
+                                <p style="margin-bottom: 0; color: #00aa00;"><strong>Closed Resolution Notes:</strong> ${inc.closed_note || 'None'}</p>
+                            </div>
+                        `;
+                        incsBox.appendChild(card);
+                    });
+                } else {
+                    incsBox.innerHTML = '<div style="text-align: center; color: var(--accent-color); padding: 2rem;">No historical tickets matched the threshold constraints.</div>';
+                }
+            } else {
+                throw new Error(data.detail || 'Search query failed.');
+            }
+        } catch (err) {
+            ragBox.innerHTML = `<span style="color: #ff3333; font-weight: bold;">Error: ${err.message}</span>`;
+            citationsBox.innerHTML = '<span style="font-size: 0.9rem; color: var(--accent-color); font-style: italic;">None.</span>';
+            incsBox.innerHTML = '<div style="text-align: center; color: var(--accent-color); padding: 2rem;">Search failed to execute.</div>';
+        } finally {
+            searchBtn.disabled = false;
+            searchBtn.textContent = 'Search & Synthesize Guide';
+        }
+    });
+
+    // Bulk Form Ingestion (Asynchronous Polling Loop)
+    const bulkForm = document.getElementById('bulk-form');
+    const bulkSubmitBtn = document.getElementById('bulk-submit-btn');
+    const bulkStatus = document.getElementById('bulk-status');
+    const bulkProgressText = document.getElementById('bulk-progress-text');
+    const bulkProgressFill = document.getElementById('bulk-progress-fill');
+    const bulkResultsSec = document.getElementById('bulk-results-section');
+    const bulkResultsCont = document.getElementById('bulk-results-container');
+    
+    bulkForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const fileInput = document.getElementById('bulk-file');
+        if (!fileInput.files[0]) return;
+        
+        bulkSubmitBtn.disabled = true;
+        bulkSubmitBtn.innerHTML = '<span class="loading-spinner" style="border-top-color: #ffffff; margin-right: 8px;"></span>Uploading CSV...';
+        bulkStatus.style.display = 'block';
+        bulkProgressText.textContent = 'Enqueuing bulk task (0%)';
+        bulkProgressFill.style.width = '0%';
+        bulkResultsSec.style.display = 'none';
+        bulkResultsCont.innerHTML = '';
+        
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+        
+        try {
+            const res = await fetch('/api/analysis/bulk-triage', {
+                method: 'POST',
+                body: formData
+            });
+            const startData = await res.json();
+            
+            if (!res.ok) throw new Error(startData.detail || 'Failed to submit bulk CSV.');
+            
+            const jobId = startData.job_id;
+            bulkSubmitBtn.innerHTML = '<span class="loading-spinner" style="border-top-color: #ffffff; margin-right: 8px;"></span>Processing Batch...';
+            
+            // Start Polling Status
+            const pollInterval = setInterval(async () => {
+                try {
+                    const statusRes = await fetch(`/api/analysis/bulk-triage/status/${jobId}`);
+                    const statusData = await statusRes.json();
+                    
+                    if (!statusRes.ok) throw new Error(statusData.detail || 'Failed to fetch status.');
+                    
+                    const total = statusData.total || 0;
+                    const processed = statusData.processed || 0;
+                    const pct = total > 0 ? Math.round((processed / total) * 100) : 0;
+                    
+                    bulkProgressText.textContent = `${processed} of ${total} records completed (${pct}%)`;
+                    bulkProgressFill.style.width = `${pct}%`;
+                    
+                    if (statusData.status === 'COMPLETED') {
+                        clearInterval(pollInterval);
+                        bulkStatus.style.display = 'none';
+                        bulkResultsSec.style.display = 'block';
+                        
+                        const results = statusData.results || [];
+                        results.forEach((item, idx) => {
+                            const rowDiv = document.createElement('div');
+                            rowDiv.className = 'zone-card';
+                            rowDiv.style.display = 'block';
+                            rowDiv.style.backgroundColor = 'var(--card-bg)';
+                            
+                            let incHtml = '';
+                            const matched = item.matched_incidents || [];
+                            if (matched.length > 0) {
+                                matched.forEach(inc => {
+                                    incHtml += `<li><strong>${inc.number}</strong> (${inc.match_score}%) - ${inc.short_desc} <small style="color: var(--accent-color);">[Assigned: ${inc.assigned_to || 'Unassigned'} / Group: ${inc.assignment_group || 'None'}]</small></li>`;
+                                });
+                            } else {
+                                incHtml = '<span style="color: var(--accent-color); font-style: italic;">No tickets matched.</span>';
+                            }
+                            
+                            let citHtml = '';
+                            const citations = item.citations || [];
+                            if (citations.length > 0) {
+                                citations.forEach(fn => {
+                                    citHtml += `<a class="citation-link" href="/files/${fn}" download>${fn}</a> `;
+                                });
+                            } else {
+                                citHtml = '<span style="color: var(--accent-color); font-style: italic;">None.</span>';
+                            }
+                            
+                            rowDiv.innerHTML = `
+                                <h3 style="border-bottom: 1px solid var(--border-color); padding-bottom: 0.4rem;">Record #${idx + 1}: ${item.cmdb_ci}</h3>
+                                <p style="margin-top: 0.5rem; color: var(--text-color);"><strong>Description:</strong> ${item.query}</p>
+                                
+                                <div style="margin: 1rem 0;">
+                                    <strong>Matched Incidents:</strong>
+                                    <ul style="margin-left: 1.5rem; margin-top: 0.3rem;">
+                                        ${incHtml}
+                                    </ul>
+                                </div>
+                                
+                                <div class="rag-box" style="background-color: var(--bg-color); min-height: 100px;">
+                                    <strong>Synthesized RAG Resolution:</strong><br>
+                                    ${marked.parse(item.rag_response || "No resolution guide synthesized.")}
+                                </div>
+                                
+                                <div style="margin-top: 1rem;">
+                                    <strong>Citations:</strong><br>
+                                    <div class="citation-list" style="margin-top: 0.3rem;">
+                                        ${citHtml}
+                                    </div>
+                                </div>
+                            `;
+                            bulkResultsCont.appendChild(rowDiv);
+                        });
+                        
+                        fileInput.value = '';
+                        bulkSubmitBtn.disabled = false;
+                        bulkSubmitBtn.textContent = 'Execute Bulk Triage';
+                    } else if (statusData.status === 'FAILED') {
+                        clearInterval(pollInterval);
+                        throw new Error(statusData.error || 'Job execution encountered a processing error.');
+                    }
+                } catch (pollErr) {
+                    clearInterval(pollInterval);
+                    bulkStatus.style.display = 'block';
+                    bulkProgressText.innerHTML = `<span style="color: #ff3333; font-weight: bold;">Triage Failed: ${pollErr.message}</span>`;
+                    bulkSubmitBtn.disabled = false;
+                    bulkSubmitBtn.textContent = 'Execute Bulk Triage';
+                }
+            }, 800);
+            
+        } catch (err) {
+            bulkStatus.style.display = 'block';
+            bulkProgressText.innerHTML = `<span style="color: #ff3333; font-weight: bold;">Error: ${err.message}</span>`;
+            bulkSubmitBtn.disabled = false;
+            bulkSubmitBtn.textContent = 'Execute Bulk Triage';
+        }
+    });
+</script>
+{% endblock %}

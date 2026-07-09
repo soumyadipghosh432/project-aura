@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+
+{% block title %}Macro Categorization - Project Aura{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Macro Categorization Engine</h1>
+    <p>Classify unassigned support tickets into operational categories and extract error messages using the active LLM.</p>
+</div>
+
+<!-- Run Job Control Card -->
+<div class="zone-card" style="margin-bottom: 2rem; display: block;">
+    <h3 style="border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; margin-bottom: 1rem;">Execution Control</h3>
+    
+    <div id="job-idle-section" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <p>There are <strong id="unclassified-lbl">{{ unclassified_count }}</strong> unclassified historical incidents in the database.</p>
+                <small style="color: var(--accent-color);">Note: Click "Run Categorization" to trigger a batch process of up to {{ batch_limit }} incidents.</small>
+            </div>
+            <div>
+                <button id="run-job-btn" class="btn-primary" style="display: {% if unclassified_count > 0 %}inline-block{% else %}none{% endif %};">Run Categorization</button>
+                <span id="all-classified-lbl" style="display: {% if unclassified_count == 0 %}inline{% else %}none{% endif %}; font-weight: 500; color: #00aa00;">All incidents are fully categorized!</span>
+            </div>
+        </div>
+    </div>
+    
+    <div id="job-active-section" style="display: none;">
+        <div class="alert-warning" style="margin-bottom: 1rem;">
+            <strong>Batch processing in progress. Please do not close the application terminal.</strong>
+        </div>
+        <p style="margin-bottom: 0.5rem;">The local LLM is categorizing incidents...</p>
+        <p style="font-size: 0.95rem; margin-bottom: 0.8rem; font-weight: 500; color: var(--accent-color);">
+            Progress: <span id="progress-text-lbl">0 of 0 completed (0%)</span> | Unclassified remaining: <strong id="unclassified-poller-lbl">...</strong>
+        </p>
+        <div class="progress-bar-container">
+            <div id="progress-bar" class="progress-bar-fill" style="width: 0%;"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Analytical Dashboard & Reporting Grid -->
+<div id="dashboard-section" style="display: block;">
+    <div class="page-header" style="margin-top: 3rem;">
+        <h2>Categorization Dashboard</h2>
+        <p>Analyze operational taxonomies and export structured categories for external workflows.</p>
+    </div>
+
+    <!-- Filters Bar -->
+    <div class="zone-card" style="margin-bottom: 2rem; padding: 1.5rem; display: block;">
+        <form id="filter-form" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) auto; gap: 1.5rem; align-items: flex-end;">
+            <div class="form-group" style="margin-bottom: 0;">
+                <label class="form-label">Start Created Date:</label>
+                <input type="date" id="filter-start-date" class="form-input" value="{{ start_date or '' }}">
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 0;">
+                <label class="form-label">End Created Date:</label>
+                <input type="date" id="filter-end-date" class="form-input" value="{{ end_date or '' }}">
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 0;">
+                <label class="form-label">CMDB CI:</label>
+                <select id="filter-cmdb-ci" class="form-select">
+                    <option value="">All Applications</option>
+                    {% for ci in cmdb_cis %}
+                    <option value="{{ ci }}" {% if ci == cmdb_ci %}selected{% endif %}>{{ ci }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div>
+                <button type="button" id="apply-filter-btn" class="btn-primary" style="height: 38px;">Apply Filter</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Volume Breakdown (Full Width) -->
+    <div class="zone-card" style="margin-top: 1rem; display: block; padding: 2rem; margin-bottom: 2rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; margin-bottom: 1.5rem;">
+            <h3 style="margin: 0; border: none; padding: 0;">Operational Category Volume Breakdown</h3>
+            <button type="button" id="export-csv-btn" class="btn-primary" style="height: 34px; padding: 0 1rem; font-size: 0.9rem; background-color: transparent; color: var(--text-color); border-color: var(--border-color);">Export CSV</button>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+            {% for item in chart_data %}
+            <div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.95rem; margin-bottom: 0.3rem;">
+                    <strong>{{ item.category }}</strong>
+                    <span style="font-weight: 600;">{{ item.count }} ticket(s)</span>
+                </div>
+                <div class="progress-bar-container" style="margin: 0; height: 16px; background-color: var(--border-color);">
+                    <div class="progress-bar-fill" style="width: 100%; background-color: var(--text-color);"></div>
+                </div>
+            </div>
+            {% else %}
+            <p style="text-align: center; color: var(--accent-color); margin-top: 1rem;">No category breakdown logs available. Run categorization first.</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Generated Category Explanations Section (Full Width) -->
+    <div class="zone-card" style="display: block; padding: 2rem; margin-bottom: 2rem;">
+        <h3 style="border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; margin-bottom: 1.2rem;">Generated Category Taxonomies & Explanations</h3>
+        <p style="margin-bottom: 1.5rem;">Descriptions for baseline categories and dynamically generated custom taxonomies. Dynamic taxonomies show typical context extracted from ticket error messages.</p>
+        
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th style="width: 25%;">Category Name</th>
+                    <th style="width: 15%;">Volume</th>
+                    <th style="width: 60%;">Operational Description & Context</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in chart_data %}
+                <tr>
+                    <td><strong>{{ item.category }}</strong></td>
+                    <td>{{ item.count }} ticket(s)</td>
+                    <td>{{ item.description }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="3" style="text-align: center; color: var(--accent-color);">No categorized taxonomies available. Ingest and classify tickets first.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const runBtn = document.getElementById('run-job-btn');
+    const idleSection = document.getElementById('job-idle-section');
+    const activeSection = document.getElementById('job-active-section');
+    const pollerCountLbl = document.getElementById('unclassified-poller-lbl');
+    const progressBar = document.getElementById('progress-bar');
+    
+    let totalInitialToProcess = 0;
+
+    async function checkJobStatus() {
+        try {
+            const res = await fetch('/api/analysis/job-status');
+            const data = await res.json();
+            
+            if (data.is_running) {
+                idleSection.style.display = 'none';
+                activeSection.style.display = 'block';
+                pollerCountLbl.textContent = data.unclassified_count;
+                
+                const total = data.total_items || 0;
+                const processed = data.processed_items || 0;
+                const percent = total > 0 ? Math.min(100, Math.round((processed / total) * 100)) : 0;
+                
+                progressBar.style.width = percent + '%';
+                document.getElementById('progress-text-lbl').textContent = `${processed} of ${total} completed (${percent}%)`;
+                
+                if (totalInitialToProcess === 0 && total > 0) {
+                    totalInitialToProcess = total;
+                }
+                
+                // Polling again in 1.5 seconds for snappier feedback
+                setTimeout(checkJobStatus, 1500);
+            } else {
+                activeSection.style.display = 'none';
+                idleSection.style.display = 'block';
+                document.getElementById('unclassified-lbl').textContent = data.unclassified_count;
+                
+                if (data.unclassified_count === 0) {
+                    runBtn.style.display = 'none';
+                    document.getElementById('all-classified-lbl').style.display = 'inline';
+                } else {
+                    runBtn.style.display = 'inline-block';
+                    document.getElementById('all-classified-lbl').style.display = 'none';
+                }
+                
+                // If we just finished, refresh metrics dashboard
+                if (totalInitialToProcess > 0) {
+                    totalInitialToProcess = 0;
+                    location.reload();
+                }
+            }
+        } catch (err) {
+            console.error("Failed to check status:", err);
+            setTimeout(checkJobStatus, 5000);
+        }
+    }
+
+    runBtn.addEventListener('click', async () => {
+        runBtn.disabled = true;
+        try {
+            const res = await fetch('/api/analysis/categorize', { method: 'POST' });
+            const data = await res.json();
+            if (res.ok) {
+                totalInitialToProcess = 0;
+                checkJobStatus();
+            } else {
+                alert("Trigger failed: " + data.message);
+                runBtn.disabled = false;
+            }
+        } catch (err) {
+            alert("Error triggering job: " + err.message);
+            runBtn.disabled = false;
+        }
+    });
+
+    // Handle filter application (reloads layout with query params)
+    const applyBtn = document.getElementById('apply-filter-btn');
+    applyBtn.addEventListener('click', () => {
+        const sd = document.getElementById('filter-start-date').value;
+        const ed = document.getElementById('filter-end-date').value;
+        const ci = document.getElementById('filter-cmdb-ci').value;
+        
+        let url = `/categorization?`;
+        if (sd) url += `start_date=${sd}&`;
+        if (ed) url += `end_date=${ed}&`;
+        if (ci) url += `cmdb_ci=${ci}`;
+        
+        window.location.href = url;
+    });
+
+    // Handle CSV exporting
+    const exportBtn = document.getElementById('export-csv-btn');
+    exportBtn.addEventListener('click', () => {
+        const sd = document.getElementById('filter-start-date').value;
+        const ed = document.getElementById('filter-end-date').value;
+        const ci = document.getElementById('filter-cmdb-ci').value;
+        
+        let url = `/api/analysis/export-csv?`;
+        if (sd) url += `start_date=${sd}&`;
+        if (ed) url += `end_date=${ed}&`;
+        if (ci) url += `cmdb_ci=${ci}`;
+        
+        window.location.href = url;
+    });
+
+    // Start checking status on load
+    checkJobStatus();
+</script>
+{% endblock %}

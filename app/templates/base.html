@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Project Aura{% endblock %}</title>
+    <link rel="stylesheet" href="/static/style.css">
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <!-- Persistent Top Bar -->
+    <header class="top-bar" style="display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 0.8rem 2rem;">
+        <div class="logo-container" style="justify-self: start;">
+            <!-- Top-Left Company Logo -->
+            <img id="company-logo" class="logo-img" src="/static/logo.png" alt="Company Logo" style="height: 30px; width: auto; vertical-align: middle;">
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.8rem; justify-self: center;">
+            <!-- Center App Logo and Title -->
+            <img id="app-logo" src="/static/logo.png" alt="Project Aura Logo" style="height: 38px; width: auto; vertical-align: middle;">
+            <h2 style="margin: 0; font-size: 1.6rem; font-weight: 700; letter-spacing: 0.05em; line-height: 38px; display: inline-block;">PROJECT AURA</h2>
+        </div>
+        <div style="display: flex; align-items: center; gap: 1rem; justify-self: end;">
+            <span style="font-size: 0.9rem; color: var(--accent-color); font-weight: 500;" id="theme-lbl">🌙 Dark</span>
+            <label class="switch" title="Toggle Theme" style="margin-bottom: 0;">
+                <input type="checkbox" id="theme-switch">
+                <span class="slider round"></span>
+            </label>
+            <a href="/help" id="help-btn" style="
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 32px;
+                height: 32px;
+                border-radius: 50%;
+                background-color: var(--border-color);
+                color: var(--text-color);
+                text-decoration: none;
+                font-weight: 700;
+                font-size: 1.05rem;
+                border: 1px solid var(--border-color);
+                transition: all 0.2s ease;
+            " onmouseover="this.style.backgroundColor='var(--text-color)'; this.style.color='var(--bg-color)'" onmouseout="this.style.backgroundColor='var(--border-color)'; this.style.color='var(--text-color)'" title="User Manual">?</a>
+        </div>
+    </header>
+
+    <!-- Navigation Bar -->
+    <nav class="nav-bar">
+        <a href="/" id="nav-home" class="nav-link">Home Dashboard</a>
+        <a href="/knowledge" id="nav-knowledge" class="nav-link">Knowledge Management</a>
+        <a href="/categorization" id="nav-categorization" class="nav-link">Macro Categorization</a>
+        <a href="/guidance" id="nav-guidance" class="nav-link">Search & Triage</a>
+        <a href="/settings" id="nav-settings" class="nav-link">Settings</a>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+
+    <script>
+        // Theme toggler and state preservation via Slider Toggle Switch
+        const themeSwitch = document.getElementById('theme-switch');
+        const themeLbl = document.getElementById('theme-lbl');
+        const htmlElement = document.documentElement;
+        const appLogo = document.getElementById('app-logo');
+        const companyLogo = document.getElementById('company-logo');
+
+        function setTheme(theme) {
+            htmlElement.setAttribute('data-theme', theme);
+            localStorage.setItem('theme', theme);
+            if (theme === 'dark') {
+                themeSwitch.checked = true;
+                themeLbl.innerHTML = '☀️ Light';
+                appLogo.src = '/static/logo_dark.png';
+                companyLogo.src = '/static/logo_dark.png';
+            } else {
+                themeSwitch.checked = false;
+                themeLbl.innerHTML = '🌙 Dark';
+                appLogo.src = '/static/logo.png';
+                companyLogo.src = '/static/logo.png';
+            }
+        }
+
+        themeSwitch.addEventListener('change', () => {
+            const currentTheme = htmlElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            setTheme(newTheme);
+        });
+
+        // Initialize from local storage
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        setTheme(savedTheme);
+
+        // Highlight current nav item
+        const currentPath = window.location.pathname;
+        if (currentPath === '/') {
+            document.getElementById('nav-home').classList.add('active');
+        } else if (currentPath.startsWith('/knowledge')) {
+            document.getElementById('nav-knowledge').classList.add('active');
+        } else if (currentPath.startsWith('/categorization')) {
+            document.getElementById('nav-categorization').classList.add('active');
+        } else if (currentPath.startsWith('/guidance')) {
+            document.getElementById('nav-guidance').classList.add('active');
+        } else if (currentPath.startsWith('/settings')) {
+            document.getElementById('nav-settings').classList.add('active');
+        }
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

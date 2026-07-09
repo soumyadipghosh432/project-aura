@@ -1,0 +1,322 @@
+{% extends "base.html" %}
+
+{% block title %}Settings & Installation - Project Aura{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Application Settings & Installation</h1>
+    <p>Perform system diagnostics, verify local offline model storage, and run the seeding script to install or reset database structures.</p>
+</div>
+
+<!-- Diagnostics Grid -->
+<div class="analytics-grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+    <!-- DB status -->
+    <div class="zone-card" style="padding: 1.5rem; display: block; justify-content: flex-start;">
+        <h4 style="margin-top: 0; margin-bottom: 0.8rem;">Structured Database Connection</h4>
+        <div id="diag-db-status" style="font-weight: 600; color: #00aa00; margin-bottom: 0.5rem;">Checking connection...</div>
+        <small style="color: var(--accent-color);">Validates access to PostgreSQL using credentials inside the local <code>.env</code> file.</small>
+    </div>
+    
+    <!-- Vector Store status -->
+    <div class="zone-card" style="padding: 1.5rem; display: block; justify-content: flex-start;">
+        <h4 style="margin-top: 0; margin-bottom: 0.8rem;">Vector Database Storage</h4>
+        <div id="diag-vector-status" style="font-weight: 600; color: #00aa00; margin-bottom: 0.5rem;">Checking status...</div>
+        <small style="color: var(--accent-color);">Verifies read/write access to Persistent ChromaDB client targeting the local <code>/.chromadb</code> directory.</small>
+    </div>
+
+    <!-- Offline Models status -->
+    <div class="zone-card" style="padding: 1.5rem; display: block; justify-content: flex-start;">
+        <h4 style="margin-top: 0; margin-bottom: 0.8rem;">Offline Model Storage (CPU)</h4>
+        <div id="diag-model-status" style="font-weight: 600; color: #00aa00; margin-bottom: 0.5rem;">Checking models...</div>
+        <small style="color: var(--accent-color);">Checks if the local directory path is configured and active model files are present on disk.</small>
+    </div>
+</div>
+
+<!-- Installation Control Card -->
+<div class="zone-card" style="display: block; padding: 2.5rem; margin-bottom: 2rem;">
+    <h3 style="border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; margin-bottom: 1.2rem; color: var(--text-color);">Application Installer & Reset</h3>
+    <p style="margin-bottom: 1.5rem; line-height: 1.6;">
+        Click the button below to execute the database seeding and installation scripts. This will drop all existing relational tables, recreate database structures clean, empty local ChromaDB vector stores, and clear parsed physical manuals from directories. Use this during first-time deployment or when reset is required.
+    </p>
+    
+    <div class="alert-warning" style="margin-bottom: 1.5rem;">
+        <strong>Warning: Running this action wipes all current ticket logs, database tables, and vectorized documentation permanently.</strong>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 1.5rem;">
+        <button id="install-btn" class="btn-primary" style="background-color: #ff3333; border-color: #ff3333;">Reset & Install Application</button>
+        <span id="install-loader" style="display: none; font-weight: 600; color: var(--accent-color);">Running seeding script... Please wait...</span>
+    </div>
+    
+    <!-- Install log status -->
+    <div id="install-result-card" class="zone-card" style="display: none; margin-top: 2rem; padding: 1.5rem; background-color: var(--bg-color);">
+        <h4 id="install-status-title" style="margin-top: 0; margin-bottom: 0.5rem;">Status: SUCCESS</h4>
+        <p id="install-status-msg" style="margin-bottom: 0; font-size: 0.95rem;"></p>
+    </div>
+</div>
+
+<!-- Logs & Insights Display Card -->
+<div class="zone-card" style="display: block; padding: 2.5rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; margin-bottom: 1.5rem;">
+        <h3 style="margin: 0; color: var(--text-color);">System Event Logs & Insights</h3>
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <label for="log-filter" style="font-size: 0.9rem; font-weight: 600;">Filter Logs:</label>
+                <select id="log-filter" class="form-input" style="width: auto; padding: 0.3rem 1.8rem 0.3rem 0.8rem; margin: 0; font-size: 0.9rem; height: auto;">
+                    <option value="all">All Logs</option>
+                    <option value="doc_upload">Document Uploads</option>
+                    <option value="inc_upload">Incident Uploads</option>
+                    <option value="categorization">Categorization runs</option>
+                    <option value="deletion">Deletions (Docs/Incidents)</option>
+                    <option value="search">Search & RAG Queries</option>
+                </select>
+            </div>
+            <button id="export-logs-btn" class="btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; height: auto;">Export Logs</button>
+        </div>
+    </div>
+    
+    <div class="table-wrapper" style="max-height: 480px; overflow-y: auto;">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th style="width: 18%;">Timestamp</th>
+                    <th style="width: 22%;">Event Type</th>
+                    <th style="width: 15%;">Reference</th>
+                    <th style="width: 12%;">Status</th>
+                    <th>Details</th>
+                </tr>
+            </thead>
+            <tbody id="logs-table-body">
+                <tr>
+                    <td colspan="5" style="text-align: center; color: var(--accent-color);">Loading event logs...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const dbStatus = document.getElementById('diag-db-status');
+    const vectorStatus = document.getElementById('diag-vector-status');
+    const modelStatus = document.getElementById('diag-model-status');
+    
+    const installBtn = document.getElementById('install-btn');
+    const installLoader = document.getElementById('install-loader');
+    const resultCard = document.getElementById('install-result-card');
+    const resultTitle = document.getElementById('install-status-title');
+    const resultMsg = document.getElementById('install-status-msg');
+
+    const logFilter = document.getElementById('log-filter');
+    const logsTableBody = document.getElementById('logs-table-body');
+    const exportLogsBtn = document.getElementById('export-logs-btn');
+
+    // Run system diagnostics
+    async function runDiagnostics() {
+        try {
+            const res = await fetch('/api/settings/diagnostics');
+            const data = await res.json();
+            
+            if (data.database === 'CONNECTED') {
+                dbStatus.textContent = 'CONNECTED';
+                dbStatus.style.color = '#00aa00';
+            } else {
+                dbStatus.textContent = 'DISCONNECTED: ' + data.db_error;
+                dbStatus.style.color = '#ff3333';
+            }
+            
+            if (data.vector_store === 'ACTIVE') {
+                vectorStatus.textContent = 'ACTIVE';
+                vectorStatus.style.color = '#00aa00';
+            } else {
+                vectorStatus.textContent = 'ERROR: ' + data.vector_error;
+                vectorStatus.style.color = '#ff3333';
+            }
+            
+            if (data.models === 'CONFIGURED') {
+                modelStatus.textContent = `CONFIGURED (Found active model: ${data.active_model_found})`;
+                modelStatus.style.color = '#00aa00';
+            } else {
+                modelStatus.textContent = 'MISSING: ' + data.model_error;
+                modelStatus.style.color = '#ff3333';
+            }
+        } catch (err) {
+            console.error("Failed to fetch diagnostics:", err);
+            dbStatus.textContent = 'OFFLINE'; dbStatus.style.color = '#ff3333';
+            vectorStatus.textContent = 'OFFLINE'; vectorStatus.style.color = '#ff3333';
+            modelStatus.textContent = 'OFFLINE'; modelStatus.style.color = '#ff3333';
+        }
+    }
+
+    // Fetch unified event logs (LangSmith grouped trace format)
+    async function fetchLogs() {
+        logsTableBody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--accent-color);">Loading event logs...</td></tr>`;
+        try {
+            const filter = logFilter.value;
+            const res = await fetch(`/api/settings/logs?filter_type=${filter}`);
+            const data = await res.json();
+            
+            if (!res.ok) throw new Error(data.detail || 'Failed to fetch logs');
+            
+            if (data.length === 0) {
+                logsTableBody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--accent-color);">No logs matched this filter criteria.</td></tr>`;
+                return;
+            }
+            
+            logsTableBody.innerHTML = '';
+            data.forEach((log, index) => {
+                const trParent = document.createElement('tr');
+                const hasChildren = log.children && log.children.length > 0;
+                trParent.style.cursor = hasChildren ? 'pointer' : 'default';
+                trParent.setAttribute('id', `trace-row-${index}`);
+                
+                let tsText = 'N/A';
+                if (log.timestamp) {
+                    const d = new Date(log.timestamp);
+                    tsText = d.toLocaleString();
+                }
+                
+                let statusStyle = '';
+                if (log.status === 'SUCCESS') {
+                    statusStyle = 'color: #00aa00; font-weight: 600;';
+                } else if (log.status === 'ERROR') {
+                    statusStyle = 'color: #ff3333; font-weight: 600;';
+                } else if (log.status === 'DELETED') {
+                    statusStyle = 'color: #e65c00; font-weight: 600;';
+                }
+                
+                let badgeBg = 'var(--border-color)';
+                if (log.event_type === 'DOCUMENT UPLOAD') badgeBg = '#3399ff';
+                else if (log.event_type === 'INCIDENT DATA UPLOAD' || log.event_type === 'VECTOR INGESTION RUN') badgeBg = '#aa00ff';
+                else if (log.event_type === 'SEARCH QUERY') badgeBg = '#2eb82e';
+                else if (log.event_type === 'CATEGORIZATION BATCH' || log.event_type === 'TICKET CLASSIFIED') badgeBg = '#ff9933';
+                else if (log.event_type.startsWith('DELETION')) badgeBg = '#ff3333';
+                else if (log.event_type.startsWith('SYSTEM RESET') || log.event_type.startsWith('SYSTEM RESET/INSTALL')) badgeBg = '#8c8c8c';
+                
+                const durationText = log.duration_ms > 0 ? ` (${(log.duration_ms / 1000).toFixed(2)}s)` : '';
+                const toggleIcon = hasChildren ? '<span class="chevron-toggle" style="display: inline-block; transition: transform 0.2s; margin-right: 5px; font-size: 0.7rem;">▶</span>' : '';
+                
+                trParent.innerHTML = `
+                    <td>${tsText}</td>
+                    <td>
+                        <div style="display: flex; align-items: center;">
+                            ${toggleIcon}
+                            <span style="display: inline-block; padding: 0.2rem 0.5rem; border-radius: 4px; background-color: ${badgeBg}; color: #ffffff; font-size: 0.75rem; font-weight: 600;">
+                                ${log.event_type}
+                            </span>
+                        </div>
+                    </td>
+                    <td><code>${log.identifier}</code></td>
+                    <td style="${statusStyle}">${log.status}${durationText}</td>
+                    <td style="font-size: 0.9rem; line-height: 1.4; white-space: pre-wrap;">${log.details}</td>
+                `;
+                
+                logsTableBody.appendChild(trParent);
+                
+                if (hasChildren) {
+                    const trChild = document.createElement('tr');
+                    trChild.setAttribute('id', `children-row-${index}`);
+                    trChild.style.display = 'none';
+                    trChild.style.backgroundColor = 'rgba(0, 0, 0, 0.01)';
+                    
+                    let childrenHTML = `
+                        <td colspan="5" style="padding: 1rem 1.5rem 1rem 2.5rem; border-left: 4px solid var(--accent-color);">
+                            <h5 style="margin-top: 0; margin-bottom: 0.8rem; color: var(--accent-color); text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px;">Trace Sub-Spans (${log.children.length})</h5>
+                            <div style="display: flex; flex-direction: column; gap: 0.8rem;">
+                    `;
+                    
+                    log.children.forEach(child => {
+                        let cStatusStyle = '';
+                        if (child.status === 'SUCCESS') cStatusStyle = 'color: #00aa00;';
+                        else if (child.status === 'ERROR') cStatusStyle = 'color: #ff3333;';
+                        
+                        let childTs = 'N/A';
+                        if (child.timestamp) {
+                            const cd = new Date(child.timestamp);
+                            childTs = cd.toLocaleTimeString();
+                        }
+                        
+                        childrenHTML += `
+                            <div style="display: grid; grid-template-columns: 100px 220px 140px 1fr; gap: 1rem; align-items: start; border-bottom: 1px dashed var(--border-color); padding-bottom: 0.5rem; font-size: 0.85rem;">
+                                <span style="color: var(--accent-color);">${childTs}</span>
+                                <strong>└─ ${child.event_type}</strong>
+                                <span style="${cStatusStyle} font-weight: 600;">${child.status} (${(child.duration_ms / 1000).toFixed(3)}s)</span>
+                                <span style="color: var(--text-color); line-height: 1.3;">${child.details}</span>
+                            </div>
+                        `;
+                    });
+                    
+                    childrenHTML += `
+                            </div>
+                        </td>
+                    `;
+                    trChild.innerHTML = childrenHTML;
+                    logsTableBody.appendChild(trChild);
+                    
+                    // Click listener to toggle children display
+                    trParent.addEventListener('click', () => {
+                        const isHidden = trChild.style.display === 'none';
+                        trChild.style.display = isHidden ? 'table-row' : 'none';
+                        
+                        const chev = trParent.querySelector('.chevron-toggle');
+                        if (chev) {
+                            chev.style.transform = isHidden ? 'rotate(90deg)' : 'rotate(0deg)';
+                        }
+                    });
+                }
+            });
+        } catch (err) {
+            logsTableBody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #ff3333;">Error loading logs: ${err.message}</td></tr>`;
+        }
+    }
+
+    // Trigger Reset & Install
+    installBtn.addEventListener('click', async () => {
+        if (!confirm("Are you absolutely sure you want to delete all database tables and vector indexes? This action is irreversible.")) {
+            return;
+        }
+        
+        installBtn.disabled = true;
+        installLoader.style.display = 'inline';
+        resultCard.style.display = 'none';
+        
+        try {
+            const res = await fetch('/api/settings/reset-install', { method: 'POST' });
+            const data = await res.json();
+            
+            resultCard.style.display = 'block';
+            if (res.ok && data.status === 'SUCCESS') {
+                resultTitle.textContent = 'Installation Succeeded';
+                resultTitle.style.color = '#00aa00';
+                resultMsg.textContent = data.message;
+            } else {
+                resultTitle.textContent = 'Installation Failed';
+                resultTitle.style.color = '#ff3333';
+                resultMsg.textContent = data.message || data.detail || 'Seeding script encountered a processing error.';
+            }
+        } catch (err) {
+            resultCard.style.display = 'block';
+            resultTitle.textContent = 'Connection Error';
+            resultTitle.style.color = '#ff3333';
+            resultMsg.textContent = 'Failed to execute seeding script request: ' + err.message;
+        } finally {
+            installBtn.disabled = false;
+            installLoader.style.display = 'none';
+            runDiagnostics();
+            fetchLogs();
+        }
+    });
+
+    logFilter.addEventListener('change', fetchLogs);
+
+    exportLogsBtn.addEventListener('click', () => {
+        const filter = logFilter.value;
+        window.location.href = `/api/settings/export-logs?filter_type=${filter}`;
+    });
+
+    // Run diagnostics and fetch logs immediately on load
+    runDiagnostics();
+    fetchLogs();
+</script>
+{% endblock %}

@@ -1,0 +1,42 @@
+# Task Checklist - Project Aura Implementation
+
+- `[x]` Step 1: Initialize Project Directory Structure & Virtual Environment
+  - `[x]` Create directories (`/app`, `/app/static`, `/app/templates`, `/knowledge_docs/pending`, `/knowledge_docs/processed`, `/knowledge_docs/failed`)
+  - `[x]` Write `requirements.txt` and install dependencies (`psycopg2-binary`, `sentence-transformers`, `python-docx`, `pypdf`, `llama-cpp-python` from cpu-whl index)
+- `[x]` Step 2: Configuration & Environment Setup
+  - `[x]` Create `.env` file with `DATABASE_URL` and `OFFLINE_MODEL_HOME`
+  - `[x]` Create `config.json` file for available models configuration
+  - `[x]` Write `/app/config.py` to validate active and fallback models configuration
+- `[x]` Step 3: Database & Telemetry Core Layout
+  - `[x]` Create database tables in PostgreSQL (`incidents`, `knowledge_documents`, `categories`, `incident_searches`, `telemetry_logs`)
+  - `[x]` Implement `/app/database.py` with SQLAlchemy setup
+  - `[x]` Implement `/app/telemetry.py` OpenTelemetry-analogue synchronous database logging
+- `[x]` Step 4: Local Vector Store & Parsing Engine
+  - `[x]` Implement `/app/vector_store.py` with local ChromaDB `PersistentClient` and offline `all-MiniLM-L6-v2` embeddings
+  - `[x]` Implement `/app/parsers.py` with CSV validator, DOCX parsing, PDF parsing, and SHA-256 deduplication
+- `[x]` Step 5: Model Orchestrator & Memory Fallback Engine
+  - `[x]` Implement `/app/models_orchestrator.py` with model loading, prompt generation, and OOM silent fallback execution
+- `[x]` Step 6: Backend Service & Business Logic
+  - `[x]` Implement CSV Ingestion and Vectorization pipeline in `/app/main.py`
+  - `[x]` Implement Document Curator ingestion pipeline
+  - `[x]` Implement Async Macro Categorization Engine running in background thread
+  - `[x]` Implement Single Incident Guidance Locator with Chroma L2 match score thresholding and RAG synthesis
+  - `[x]` Implement Bulk Incident Triage CSV processing
+- `[x]` Step 7: Frontend Interface & Aesthetics
+  - `[x]` Create HTML Jinja2 templates (Homepage/Analytics, Knowledge Base, Categorization Dashboard, Guidance/Triage Search)
+  - `[x]` Implement `style.css` styling theme management (Light/Dark modes) and styling rules
+- `[x]` Step 8: System Verification & Testing
+  - `[x]` Run pipeline validations and test memory fallback mechanisms
+  - `[x]` Perform offline isolation tests
+- `[x]` Step 9: Handover & Deployment Bundle Configuration
+  - `[x]` Create automated database & vector index seeding script
+  - `[x]` Create settings dashboard (`settings.html`) with live PostgreSQL, ChromaDB, and model file checks
+  - `[x]` Create Windows launch script (`run_app.bat`)
+  - `[x]` Create manual setup guide (`MANUAL_INSTALL.md`)
+  - `[x]` Create project readme documentation (`README.md`)
+- `[x]` Step 10: Telemetry Tracing & Asynchronous Polling
+  - `[x]` Integrate LangSmith grouped transaction trace logging with collapsible spans
+  - `[x]` Implement telemetry log CSV exporter
+  - `[x]` Migrate bulk triage to async BackgroundTasks with status polling
+  - `[x]` Refactor categorization progress tracking to use database metrics and update gradually
+
