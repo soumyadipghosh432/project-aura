@@ -1,0 +1,9 @@
+1. Work Duration Split
+Based on the log timestamps in the conversation history, here is the active vs. idle time breakdown:
+
+Actual Work Time (Active Coding/Typing): 4.0 hours (240.5 minutes). This represents the active sessions where we were actively coding, writing files, executing testing commands, and discussing requirements.
+Idle/Break Time (Refinement, Self-testing, UAT): 8.3 hours (500.0 minutes). This represents the gaps between turns where we were executing local tests, drafting plans, waiting for LLM model compilations, or taking short breaks.
+
+2. Token Consumption Split
+Total Input Tokens: ~32.6 million tokens. (Includes system prompts, tool declarations, loaded file contexts, and OTel database trace histories loaded during each turn).
+Total Output Tokens: 201,887 tokens (approx. 767,000 characters). This represents the exact text and code contents of our generated responses, plans, and files.
