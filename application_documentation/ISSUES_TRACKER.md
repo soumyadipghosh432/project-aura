@@ -16,6 +16,8 @@ This tracker documents all bugs, code failures, and feature enhancements encount
 | **BUG-008** | UAT | Dependencies | `llama-cpp-python` wheel installation failed on the new environment with "not supported wheel on this platform" error. | Added Python version and compatible tags diagnostic instructions to download the exact matching wheel. | **Resolved** |
 | **BUG-009** | UAT | Configuration | Database name was hardcoded as `postgres` in documentation and manual seed scripts, causing mismatches. | Updated all installation guides and README connection strings to use `project_aura`. | **Resolved** |
 | **BUG-010** | UAT | Vector Store | Recreating collections in the manual seed script without passing the embedding function crashed offline app startup. | Updated seed script snippet to import and pass the custom offline `embedding_function` when creating collections. | **Resolved** |
+| **BUG-011** | UAT | Configuration | Seeding/initialization scripts failed on fresh environments because database `project_aura` was not created. | Added a PostgreSQL database manual creation prerequisite step to the installation guides. | **Resolved** |
+| **BUG-012** | UAT | Startup Script | `run_app.bat` echo URL pointed to localhost instead of IP, and printed the url statement before uvicorn started. | Updated localhost to IP address in echo, and moved message output block to execute after the uvicorn start command. | **Resolved** |
 
 ---
 
@@ -60,3 +62,11 @@ This tracker documents all bugs, code failures, and feature enhancements encount
 ### BUG-010: Offline ChromaDB Collection Initialization Crash
 *   **Root Cause:** The manual seed script block created collections without specifying an embedding function. Consequently, ChromaDB defaulted to its standard embedding function, which requires an active internet connection to download weights from Hugging Face, crashing the app on air-gapped systems.
 *   **Resolution:** Updated the manual seed script in [MANUAL_INSTALL.md](file:///c:/Users/Roni/Documents/GitHub/project-aura/application_documentation/MANUAL_INSTALL.md) to import `embedding_function` from `app.vector_store` and pass it as an argument during collection creation calls.
+
+### BUG-011: Missing Database Prerequisite Guide
+*   **Root Cause:** The installation manuals did not state that developers must manually create the empty database `project_aura` in PostgreSQL first, causing SQLAlchemy connection failures when executing setup script routines.
+*   **Resolution:** Added a specific manual database creation prerequisite (`CREATE DATABASE project_aura;`) under the Prerequisites block in [MANUAL_INSTALL.md](file:///c:/Users/Roni/Documents/GitHub/project-aura/application_documentation/MANUAL_INSTALL.md).
+
+### BUG-012: run_app.bat localhost URL & Echo Order Fix
+*   **Root Cause:** The startup script printed `http://localhost:8000` which did not match the explicit `127.0.0.1` binding used by uvicorn, and outputted the print statement *before* uvicorn had executed.
+*   **Resolution:** Replaced localhost with the bound IP `127.0.0.1` in the echo statement and rearranged the script so that the launch info echoes below the uvicorn start command.

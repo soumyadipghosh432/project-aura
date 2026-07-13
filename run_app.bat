@@ -21,8 +21,7 @@ echo Activating virtual environment...
 call .\venv\Scripts\activate.bat
 
 echo launching local web server on port 8000...
-echo Please access http://localhost:8000 in your browser.
-echo.
 python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
-
+echo.
+echo Please access http://127.0.0.1:8000 in your browser.
 pause

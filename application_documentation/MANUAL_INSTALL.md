@@ -2,12 +2,11 @@
 
 This document details the step-by-step instructions to configure, initialize, and deploy Project Aura on your local Windows workstation. Use these steps if you want to configure components manually or if the automated seeding script fails.
 
----
-
 ## 1. Prerequisites
-Ensure the following software is installed on your workstation before starting:
+Ensure the following software is installed and configured on your workstation before starting:
 - **Python 3.10 to 3.13** (64-bit version).
 - **PostgreSQL 14+** (running locally on standard port `5432`).
+- **PostgreSQL Database:** You must manually create an empty database named `project_aura` (e.g., by executing `CREATE DATABASE project_aura;` in your PostgreSQL shell or pgAdmin) before running the database initialization scripts.
 
 ---
 
