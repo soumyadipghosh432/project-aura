@@ -13,6 +13,9 @@ This tracker documents all bugs, code failures, and feature enhancements encount
 | **BUG-005** | UAT | RAG Synthesis | Irrelevant search queries (e.g. `"This is a test incident"`) still returned manual citations and synthesized fake guides. | Added L2 distance score threshold filtering to the knowledge base manual query chunks. | **Resolved** |
 | **BUG-006** | UAT | Telemetry Logs | Logs displayed as flat tables; vectorization runs showed up separately and lacked incident ticket identifiers. | Implemented LangSmith-style collapsible parent-child groupings and logged ticket IDs in child spans. | **Resolved** |
 | **BUG-007** | UAT | Progress Bars | Categorization progress bar jumped from 0% to 100% instantly; bulk CSV triage locked the UI thread. | Migrated bulk triage to async BackgroundTasks. Added database progress tracking columns. | **Resolved** |
+| **BUG-008** | UAT | Dependencies | `llama-cpp-python` wheel installation failed on the new environment with "not supported wheel on this platform" error. | Added Python version and compatible tags diagnostic instructions to download the exact matching wheel. | **Resolved** |
+| **BUG-009** | UAT | Configuration | Database name was hardcoded as `postgres` in documentation and manual seed scripts, causing mismatches. | Updated all installation guides and README connection strings to use `project_aura`. | **Resolved** |
+| **BUG-010** | UAT | Vector Store | Recreating collections in the manual seed script without passing the embedding function crashed offline app startup. | Updated seed script snippet to import and pass the custom offline `embedding_function` when creating collections. | **Resolved** |
 
 ---
 
@@ -45,3 +48,15 @@ This tracker documents all bugs, code failures, and feature enhancements encount
     2.  Added `total_items` and `processed_items` columns to `JobStatus` table.
     3.  Updated macro-categorization and bulk triage loops to commit progress changes progressively.
     4.  Created `/api/analysis/bulk-triage/status/{job_id}` polling status endpoints for the frontend.
+
+### BUG-008: llama-cpp-python Platform Compatibility Wheel Error
+*   **Root Cause:** The target virtual environment ran on a different Python ABI (e.g. Python 3.12 vs 3.13) or architecture than the downloaded `llama-cpp-python` precompiled CPU wheel file, causing `pip` to reject the installation.
+*   **Resolution:** Added explicit debugging steps inside [MANUAL_INSTALL.md](file:///c:/Users/Roni/Documents/GitHub/project-aura/application_documentation/MANUAL_INSTALL.md) guiding developers to verify their environment using `python --version` and `pip debug --verbose` to download the exact compatible wheel tag (e.g. `cp312-cp312-win_amd64.whl`).
+
+### BUG-009: postgres Database Connection Mismatch
+*   **Root Cause:** The database configurations and sample `.env` properties declared inside the manuals referenced `postgres` as the default database, which mismatched the target workstation's database named `project_aura`.
+*   **Resolution:** Updated all database configurations, environmental variables, and connection strings inside [MANUAL_INSTALL.md](file:///c:/Users/Roni/Documents/GitHub/project-aura/application_documentation/MANUAL_INSTALL.md) and [README.md](file:///c:/Users/Roni/Documents/GitHub/project-aura/README.md) to use `project_aura`.
+
+### BUG-010: Offline ChromaDB Collection Initialization Crash
+*   **Root Cause:** The manual seed script block created collections without specifying an embedding function. Consequently, ChromaDB defaulted to its standard embedding function, which requires an active internet connection to download weights from Hugging Face, crashing the app on air-gapped systems.
+*   **Resolution:** Updated the manual seed script in [MANUAL_INSTALL.md](file:///c:/Users/Roni/Documents/GitHub/project-aura/application_documentation/MANUAL_INSTALL.md) to import `embedding_function` from `app.vector_store` and pass it as an argument during collection creation calls.

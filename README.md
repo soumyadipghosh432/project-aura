@@ -32,7 +32,7 @@ Project Aura is a 100% offline, air-gapped support ticket triage, categorization
 
 Create a `.env` file in the root directory:
 ```env
-DATABASE_URL=postgresql://postgres:admin@localhost:5432/postgres
+DATABASE_URL=postgresql://postgres:admin@localhost:5432/project_aura
 OFFLINE_MODEL_HOME=C:\Users\Roni\Documents\Python Projects\Offline models
 PROJECT_ROOT=C:\Users\Roni\Documents\GitHub\project-aura
 ```

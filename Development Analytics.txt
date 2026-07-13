@@ -7,3 +7,9 @@ Idle/Break Time (Refinement, Self-testing, UAT): 8.3 hours (500.0 minutes). This
 2. Token Consumption Split
 Total Input Tokens: ~32.6 million tokens. (Includes system prompts, tool declarations, loaded file contexts, and OTel database trace histories loaded during each turn).
 Total Output Tokens: 201,887 tokens (approx. 767,000 characters). This represents the exact text and code contents of our generated responses, plans, and files.
+
+Cost :
+Work time = 4 hours = 4 * $25 = $100
+Token cost = (32.6 * $1.5) + (0.201 * $9) = $50.70
+Subcription cost = $20
+Total = $ 171

@@ -37,12 +37,16 @@ Install the required packages listed in `requirements.txt`.
 ```powershell
 pip install -r requirements.txt
 ```
-*Note: If `llama-cpp-python` fails to compile due to missing compiler tools, download the pre-compiled wheel files for Windows matching your Python version from official binary wheels hosts and install it directly (e.g. `pip install llama_cpp_python-0.3.19-cp313-cp313-win_amd64.whl`).*
+*Note: If `llama-cpp-python` fails to compile due to missing compiler tools:*
+1. Download the pre-compiled CPU wheel file for Windows matching your Python version from the official wheels index at `https://abetlen.github.io/llama-cpp-python/whl/cpu`.
+2. Ensure you download the correct tag (e.g., `cp312` for Python 3.12, `cp313` for Python 3.13, and `win_amd64` for 64-bit Windows).
+3. If you get a *"not supported wheel on this platform"* error, check your environment's active Python version via `python --version` and run `pip debug --verbose` to view compatible platform tags.
+4. Install the matching wheel file directly, for example: `pip install llama_cpp_python-0.3.19-cp313-cp313-win_amd64.whl`.
 
 ### Step 2.4: Setup Configuration Environments
 Create a `.env` file in the root folder containing the following variables:
 ```env
-DATABASE_URL=postgresql://postgres:admin@localhost:5432/postgres
+DATABASE_URL=postgresql://postgres:admin@localhost:5432/project_aura
 OFFLINE_MODEL_HOME=C:\Users\Roni\Documents\Python Projects\Offline models
 PROJECT_ROOT=C:\Users\Roni\Documents\GitHub\project-aura
 ```
@@ -67,10 +71,10 @@ import os
 import shutil
 from sqlalchemy import create_engine
 from app.database import Base, JobStatus
-from app.vector_store import client as chroma_client
+from app.vector_store import client as chroma_client, embedding_function
 
 # PostgreSQL Connection
-DB_URL = "postgresql://postgres:admin@localhost:5432/postgres"
+DB_URL = "postgresql://postgres:admin@localhost:5432/project_aura"
 engine = create_engine(DB_URL)
 
 print("Dropping old database tables...")
@@ -102,8 +106,8 @@ try:
 except:
     pass
 
-chroma_client.get_or_create_collection("incidents", metadata={"hnsw:space": "l2"})
-chroma_client.get_or_create_collection("knowledge_base", metadata={"hnsw:space": "l2"})
+chroma_client.get_or_create_collection("incidents", embedding_function=embedding_function, metadata={"hnsw:space": "l2"})
+chroma_client.get_or_create_collection("knowledge_base", embedding_function=embedding_function, metadata={"hnsw:space": "l2"})
 print("Vector store collections successfully initialized.")
 
 # Recreate Physical Folders
