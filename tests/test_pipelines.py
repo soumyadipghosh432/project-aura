@@ -45,6 +45,16 @@ class TestProjectAuraPipelines(unittest.TestCase):
         self.assertEqual(dt.second, 26)
         self.assertEqual(dt.tzinfo, timezone.utc)
 
+        # Test ISO YYYY-MM-DD format
+        dt2 = parse_date("2025-12-18 14:09:44")
+        self.assertEqual(dt2.year, 2025)
+        self.assertEqual(dt2.month, 12)
+        self.assertEqual(dt2.day, 18)
+        self.assertEqual(dt2.hour, 14)
+        self.assertEqual(dt2.minute, 9)
+        self.assertEqual(dt2.second, 44)
+        self.assertEqual(dt2.tzinfo, timezone.utc)
+
     def test_csv_parser_validation(self):
         """Verify CSV column header validation works case-insensitively."""
         csv_data = (
@@ -58,6 +68,17 @@ class TestProjectAuraPipelines(unittest.TestCase):
         self.assertEqual(records[0]["number"], "INC001")
         self.assertEqual(records[0]["cmdb_ci"], "AppA")
         self.assertEqual(records[0]["closed_note"], "ClosedNotes")
+
+        # Test alternative column name 'close_notes'
+        csv_data_alt = (
+            "number,CMDB_CI,short_description,caller_id,u_ge_affected_user,opened_by,priority,state,"
+            "assignment_group,assigned_to,description,comments_and_work_notes,close_notes,sys_created_on\n"
+            "INC002,AppB,ShortDescB,C2,U2,O2,2,Open,GroupB,UserB,DescTextB,WorkNotesB,ClosedNotesB,2025-12-18 14:09:44\n"
+        )
+        records_alt = parse_csv_file(csv_data_alt)
+        self.assertEqual(len(records_alt), 1)
+        self.assertEqual(records_alt[0]["number"], "INC002")
+        self.assertEqual(records_alt[0]["closed_note"], "ClosedNotesB")
 
     def test_text_chunker(self):
         """Verify token-based text chunker works correctly and returns list of chunks."""

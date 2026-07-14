@@ -18,6 +18,8 @@ This tracker documents all bugs, code failures, and feature enhancements encount
 | **BUG-010** | UAT | Vector Store | Recreating collections in the manual seed script without passing the embedding function crashed offline app startup. | Updated seed script snippet to import and pass the custom offline `embedding_function` when creating collections. | **Resolved** |
 | **BUG-011** | UAT | Configuration | Seeding/initialization scripts failed on fresh environments because database `project_aura` was not created. | Added a PostgreSQL database manual creation prerequisite step to the installation guides. | **Resolved** |
 | **BUG-012** | UAT | Startup Script | `run_app.bat` echo URL pointed to localhost instead of IP, and printed the url statement before uvicorn started. | Updated localhost to IP address in echo, and moved message output block to execute after the uvicorn start command. | **Resolved** |
+| **BUG-013** | UAT | Ingestion | Uploading CSVs containing special/accented characters failed with UnicodeDecodeError (HTTP 400). | Implemented an encoding fallback cascade (utf-8 -> windows-1252 -> latin-1) to support CP1252 exports. | **Resolved** |
+| **BUG-014** | UAT | Ingestion | CSV uploads failed if closed_note was named close_notes, or if created date was in YYYY-MM-DD format. | Mapped close_notes column to standard field, and added YYYY-MM-DD HH:MM:SS format support in parser. | **Resolved** |
 
 ---
 
@@ -70,3 +72,16 @@ This tracker documents all bugs, code failures, and feature enhancements encount
 ### BUG-012: run_app.bat localhost URL & Echo Order Fix
 *   **Root Cause:** The startup script printed `http://localhost:8000` which did not match the explicit `127.0.0.1` binding used by uvicorn, and outputted the print statement *before* uvicorn had executed.
 *   **Resolution:** Replaced localhost with the bound IP `127.0.0.1` in the echo statement and rearranged the script so that the launch info echoes below the uvicorn start command.
+
+### BUG-013: Ingestion UnicodeDecodeError on Accented CSV Data
+*   **Root Cause:** The CSV file contained Western European accented characters (like `é` represented as CP1252 byte `0xe9`) because it was exported from Windows Excel using CP1252/ANSI encoding instead of UTF-8. The server strictly called `.decode("utf-8")`, which fails and throws a UnicodeDecodeError when encountering non-UTF-8 bytes.
+*   **Resolution:** Modified the decoding logic in the incident ingestion and bulk triage routes inside [app/main.py](file:///c:/Users/Roni/Documents/GitHub/project-aura/app/main.py) to try decoding using `utf-8` first, with automatic fallbacks to `windows-1252` and then `latin-1` upon failure.
+
+### BUG-014: CSV Column Header Mapping & ISO Date Parser Failures
+*   **Root Cause:** 
+    1.  The CSV parser did not support variation in standard columns, raising a ValueError if the ticket tool exported `close_notes` instead of `closed_note`.
+    2.  The `sys_created_on` date format check only supported `DD-MM-YYYY HH:MM:SS` (with/without AM/PM), raising an error if dates were formatted as standard ISO `YYYY-MM-DD HH:MM:SS` (e.g. `2025-12-18 14:09:44`).
+*   **Resolution:** 
+    1.  Updated column header validation in [app/parsers.py](file:///c:/Users/Roni/Documents/GitHub/project-aura/app/parsers.py) to allow mapping the `close_notes` string to the standard `closed_note` schema field.
+    2.  Added fallback matching for `YYYY-MM-DD HH:MM:SS` in the `parse_date` utility.
+    3.  Wrote unit test cases inside [tests/test_pipelines.py](file:///c:/Users/Roni/Documents/GitHub/project-aura/tests/test_pipelines.py) to automate future checks.

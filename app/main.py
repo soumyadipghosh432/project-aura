@@ -446,7 +446,13 @@ async def ingest_incidents(file: UploadFile = File(...), db: Session = Depends(g
     with telemetry_span("incident_ingestion") as span:
         try:
             content_bytes = await file.read()
-            content_str = content_bytes.decode("utf-8")
+            try:
+                content_str = content_bytes.decode("utf-8")
+            except UnicodeDecodeError:
+                try:
+                    content_str = content_bytes.decode("windows-1252")
+                except UnicodeDecodeError:
+                    content_str = content_bytes.decode("latin-1")
             
             parsed = parse_csv_file(content_str)
             
@@ -860,7 +866,13 @@ async def bulk_triage(
     with telemetry_span("bulk_triage") as span:
         try:
             content_bytes = await file.read()
-            content_str = content_bytes.decode("utf-8")
+            try:
+                content_str = content_bytes.decode("utf-8")
+            except UnicodeDecodeError:
+                try:
+                    content_str = content_bytes.decode("windows-1252")
+                except UnicodeDecodeError:
+                    content_str = content_bytes.decode("latin-1")
             
             lines = content_str.splitlines()
             if not lines:

@@ -21,8 +21,11 @@ def calculate_sha256(content: bytes) -> str:
     return sha256.hexdigest()
 
 def parse_date(date_str: str) -> datetime:
-    """Parses sys_created_on timestamp in format 'DD-MM-YYYY HH:MM:SS AM/PM'
-    and returns a timezone-aware UTC datetime.
+    """Parses sys_created_on timestamp and returns a timezone-aware UTC datetime.
+    Supports formats:
+    - 'DD-MM-YYYY HH:MM:SS AM/PM'
+    - 'DD-MM-YYYY HH:MM:SS'
+    - 'YYYY-MM-DD HH:MM:SS'
     """
     date_str = date_str.strip()
     try:
@@ -35,10 +38,15 @@ def parse_date(date_str: str) -> datetime:
             dt = datetime.strptime(date_str, "%d-%m-%Y %H:%M:%S")
             return dt.replace(tzinfo=timezone.utc)
         except ValueError:
-            raise ValueError(
-                f"Date format '{date_str}' is invalid. "
-                "Expected format: 'DD-MM-YYYY HH:MM:SS AM/PM'"
-            )
+            try:
+                # Fallback format YYYY-MM-DD HH:MM:SS
+                dt = datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
+                return dt.replace(tzinfo=timezone.utc)
+            except ValueError:
+                raise ValueError(
+                    f"Date format '{date_str}' is invalid. "
+                    "Expected formats: 'DD-MM-YYYY HH:MM:SS AM/PM' or 'YYYY-MM-DD ...'"
+                )
 
 def parse_csv_file(file_content_str: str):
     """Parses and validates the CSV content according to case-insensitive column schemas."""
@@ -70,11 +78,19 @@ def parse_csv_file(file_content_str: str):
         "sys_created_on"
     ]
 
+    header_indices = {}
     for col in required_columns:
-        if col not in headers:
-            raise ValueError(f"Missing required CSV column header: '{col}'")
-
-    header_indices = {col: headers.index(col) for col in required_columns}
+        if col == "closed_note":
+            if "closed_note" in headers:
+                header_indices["closed_note"] = headers.index("closed_note")
+            elif "close_notes" in headers:
+                header_indices["closed_note"] = headers.index("close_notes")
+            else:
+                raise ValueError("Missing required CSV column header: 'closed_note' or 'close_notes'")
+        else:
+            if col not in headers:
+                raise ValueError(f"Missing required CSV column header: '{col}'")
+            header_indices[col] = headers.index(col)
 
     parsed_records = []
     for line_num, row in enumerate(rows[1:], start=2):
