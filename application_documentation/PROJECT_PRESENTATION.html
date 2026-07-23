@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Aura | Executive Overview</title>
+    <style>
+        :root {
+            /* Application Light Theme Colors from style.css */
+            --bg-page: #F4F6F9;
+            --bg-card: #FFFFFF;
+            --border-color: #E2E8F0;
+            --text-primary: #1A1A1A;
+            --text-secondary: #64748B;
+            --primary: #1A1A1A;
+            --primary-rgb: 26, 26, 26;
+            --success: #10B981;
+            --accent: #64748B;
+            --warning: #F59E0B;
+            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            --active-glow: rgba(26, 26, 26, 0.05);
+        }
+
+        [data-theme="dark"] {
+            /* Swapped bg-page and bg-card to match request (black panels, gray center) */
+            --bg-page: #121212; /* Center space: Gray shade */
+            --bg-card: #000000; /* Left & Top panels: Black */
+            --border-color: #262626;
+            --text-primary: #FFFFFF;
+            --text-secondary: #808080;
+            --primary: #38bdf8; /* Glowing Blue Accent */
+            --primary-rgb: 56, 189, 248;
+            --success: #10B981;
+            --accent: #808080;
+            --warning: #F59E0B;
+            --shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+            --active-glow: rgba(56, 189, 248, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            transition: background-color 0.25s ease, border-color 0.25s ease;
+        }
+
+        body {
+            background-color: var(--bg-page);
+            color: var(--text-primary);
+            font-family: var(--font-family);
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Top Header Navigation matching style.css top-bar */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 32px;
+            height: 70px;
+            border-bottom: 1px solid var(--border-color);
+            background-color: var(--bg-card);
+            z-index: 10;
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-img {
+            height: 32px;
+            width: auto;
+        }
+
+        .logo-text {
+            font-weight: 700;
+            font-size: 20px;
+            letter-spacing: -0.5px;
+            color: var(--text-primary);
+        }
+
+        .logo-tagline {
+            font-size: 11px;
+            color: var(--text-secondary);
+            border-left: 1px solid var(--border-color);
+            padding-left: 12px;
+            margin-left: 4px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .theme-toggle-btn {
+            background: none;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .theme-toggle-btn:hover {
+            border-color: var(--primary);
+            background-color: var(--active-glow);
+        }
+
+        /* Presentation Workspace Layout */
+        .workspace {
+            flex-grow: 1;
+            display: flex;
+            position: relative;
+            height: calc(100vh - 140px); /* 70px header + 70px footer */
+        }
+
+        /* Sidebar Slide Navigator expanded to prevent wrap */
+        .slide-navigator {
+            width: 340px;
+            border-right: 1px solid var(--border-color);
+            background-color: var(--bg-card);
+            padding: 20px 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            overflow-y: auto;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            border-radius: 6px;
+            background: none;
+            border: 1px solid transparent;
+            color: var(--text-secondary);
+            text-align: left;
+            cursor: pointer;
+            font-family: var(--font-family);
+            font-weight: 500;
+            font-size: 14px;
+            width: 100%;
+            transition: all 0.2s ease;
+        }
+
+        .nav-item:hover {
+            color: var(--text-primary);
+            background-color: var(--active-glow);
+        }
+
+        .nav-item.active {
+            color: var(--text-primary);
+            background-color: var(--active-glow);
+            border-color: var(--primary);
+            font-weight: 600;
+        }
+
+        .nav-num {
+            font-size: 11px;
+            background-color: var(--border-color);
+            color: var(--text-secondary);
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            transition: all 0.2s ease;
+        }
+
+        .nav-item.active .nav-num {
+            background-color: var(--primary);
+            color: var(--bg-card);
+        }
+
+        /* Slide Viewport Frame - ALIGNED TO TOP UNIFORMLY */
+        .slide-viewport {
+            flex-grow: 1;
+            padding: 30px 40px;
+            overflow-y: auto;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+        }
+
+        /* Slide Wrapper */
+        .slide-deck {
+            width: 100%;
+            max-width: 950px;
+        }
+
+        /* Slide Wrapper & Animations */
+        .slide {
+            width: 100%;
+            display: none;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        .slide.active {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Slide Typography */
+        .slide-tag {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 8px;
+            display: inline-block;
+        }
+
+        .slide-title {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            margin-bottom: 15px;
+            line-height: 1.25;
+            color: var(--text-primary);
+        }
+
+        .slide-desc {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        /* Layout Cards & Grids */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .content-grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1.4fr;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .info-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 16px 20px;
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .info-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--primary);
+            opacity: 0.8;
+        }
+
+        .card-title {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-body {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .info-card li {
+            margin-left: 15px;
+            margin-bottom: 4px;
+        }
+
+        /* Bullet lists styled */
+        .styled-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .styled-list li {
+            position: relative;
+            padding-left: 24px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .styled-list li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            top: 1px;
+            color: var(--success);
+            font-weight: 700;
+            font-size: 13px;
+        }
+
+        /* Diagram wrapper */
+        .diagram-panel {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+
+        .diagram-panel svg {
+            width: 100%;
+            height: auto;
+            max-height: 380px;
+        }
+
+        /* Footer presentation control toolbar */
+        footer {
+            height: 70px;
+            border-top: 1px solid var(--border-color);
+            background-color: var(--bg-card);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 40px;
+            z-index: 10;
+        }
+
+        .progress-bar-container {
+            width: 250px;
+            height: 6px;
+            background-color: var(--border-color);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: var(--primary);
+            width: 14.3%; /* 1 of 7 slides initially */
+            transition: width 0.3s ease;
+        }
+
+        .deck-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .control-btn {
+            background-color: var(--border-color);
+            border: 1px solid transparent;
+            color: var(--text-primary);
+            padding: 8px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .control-btn:hover {
+            background-color: var(--active-glow);
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .control-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            background-color: var(--border-color);
+            border-color: transparent;
+            color: var(--text-secondary);
+        }
+
+        .slide-counter {
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 1. TOP HEADER -->
+    <header>
+        <div class="logo-area">
+            <img src="../app/static/logo_dark.png" alt="Project Aura Logo" id="logoImg" class="logo-img">
+            <div class="logo-text">Project Aura</div>
+            <div class="logo-tagline">Executive Briefing</div>
+        </div>
+        <div class="header-actions">
+            <button class="theme-toggle-btn" id="themeBtn">
+                🌙 Dark Mode
+            </button>
+        </div>
+    </header>
+
+    <!-- 2. PRESENTATION WORKSPACE -->
+    <div class="workspace">
+        <!-- Sidebar Navigation -->
+        <div class="slide-navigator" id="sidebarNav">
+            <!-- Navigation items injected dynamically by javascript -->
+        </div>
+
+        <!-- Slide Content viewport -->
+        <div class="slide-viewport">
+            <div class="slide-deck" id="slideDeck">
+
+                <!-- SLIDE 1: COVER & EXECUTIVE SUMMARY -->
+                <div class="slide active" data-slide-index="0">
+                    <span class="slide-tag">01. EXECUTIVE BRIEFING</span>
+                    <h2 class="slide-title">Executive Summary</h2>
+                    <p class="slide-desc">
+                        Project Aura is a monolithic 100% offline, air-gapped support workstation designed to perform ticket triaging, automated macro categorization, and technical document curation directly on secure local systems.
+                    </p>
+                    <div class="card-grid">
+                        <div class="info-card">
+                            <div class="card-title">🔒 Air-Gapped Security</div>
+                            <div class="card-body">
+                                Operates entirely without network dependencies, external API calls, or remote connections. Complies with strict security policies.
+                            </div>
+                        </div>
+                        <div class="info-card">
+                            <div class="card-title">⚡ Local CPU Execution</div>
+                            <div class="card-body">
+                                Performs in-process inference and embeddings using lightweight GGUF models optimized for CPU workstation architectures.
+                            </div>
+                        </div>
+                        <div class="info-card">
+                            <div class="card-title">📈 Knowledge-Driven RAG</div>
+                            <div class="card-body">
+                                Curates reference manuals and builds persistent vector indices to retrieve solution paths and synthesize guided resolutions.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SLIDE 2: TECHNICAL ARCHITECTURE -->
+                <div class="slide" data-slide-index="1">
+                    <span class="slide-tag">02. BLUEPRINT</span>
+                    <h2 class="slide-title">Technical Architecture</h2>
+                    <p class="slide-desc">
+                        A single Python process executes the entire UI and offline models, bypassing Inter-Process Communication (IPC) overhead to maximize CPU throughput.
+                    </p>
+                    <div class="content-grid-2">
+                        <div class="info-card">
+                            <div class="card-title">⚙️ Monolithic FastAPI</div>
+                            <div class="card-body">
+                                Serves frontend templates, REST APIs, and runs background workers in the same thread boundary.
+                                <ul class="styled-list" style="margin-top: 8px;">
+                                    <li><strong>PostgreSQL DB:</strong> Manages 6 schemas mapping incidents, telemetry, and taxonomy.</li>
+                                    <li><strong>Persistent ChromaDB:</strong> Vector index target folder writing directly to <code>/.chromadb</code>.</li>
+                                    <li><strong>llama-cpp-python:</strong> Coordinates CPU llama GGUF model executions.</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="diagram-panel">
+                            <svg width="100%" height="100%" viewBox="0 0 450 350" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="150" y="10" width="150" height="50" rx="6" fill="#0c4a6e" stroke="#0284c7" stroke-width="2"/>
+                                <text x="225" y="40" fill="#ffffff" font-size="12" font-weight="bold" text-anchor="middle">FastAPI Monolith</text>
+                                
+                                <rect x="20" y="140" width="110" height="70" rx="6" fill="#1e1b4b" stroke="#4f46e5" stroke-width="2"/>
+                                <text x="75" y="175" fill="#ffffff" font-size="12" font-weight="bold" text-anchor="middle">PostgreSQL</text>
+                                <text x="75" y="195" fill="#94a3b8" font-size="10" text-anchor="middle">Relational (6 tables)</text>
+                                
+                                <rect x="160" y="140" width="130" height="70" rx="6" fill="#064e3b" stroke="#059669" stroke-width="2"/>
+                                <text x="225" y="175" fill="#ffffff" font-size="12" font-weight="bold" text-anchor="middle">ChromaDB</text>
+                                <text x="225" y="195" fill="#94a3b8" font-size="10" text-anchor="middle">Vector Storage (l2)</text>
+
+                                <rect x="310" y="140" width="120" height="70" rx="6" fill="#18181b" stroke="#52525b" stroke-width="2"/>
+                                <text x="370" y="175" fill="#ffffff" font-size="12" font-weight="bold" text-anchor="middle">llama-cpp-python</text>
+                                <text x="370" y="195" fill="#94a3b8" font-size="10" text-anchor="middle">GGUF CPU Models</text>
+
+                                <rect x="160" y="270" width="130" height="50" rx="6" fill="#1e293b" stroke="#475569" stroke-width="2"/>
+                                <text x="225" y="300" fill="#ffffff" font-size="11" font-weight="bold" text-anchor="middle">all-MiniLM-L6-v2</text>
+
+                                <!-- Connectors -->
+                                <path d="M 225 60 L 225 140" stroke="#0284c7" stroke-width="2"/>
+                                <path d="M 225 60 L 75 60 L 75 140" stroke="#0284c7" stroke-width="2"/>
+                                <path d="M 225 60 L 370 60 L 370 140" stroke="#0284c7" stroke-width="2"/>
+                                <path d="M 225 210 L 225 270" stroke="#059669" stroke-width="2"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SLIDE 3: DESIGN DECISIONS -->
+                <div class="slide" data-slide-index="2">
+                    <span class="slide-tag">03. RATIONALE</span>
+                    <h2 class="slide-title">Design Rationale & Decisions</h2>
+                    <p class="slide-desc">
+                        Engineering decisions were centered on mitigating constraints of offline workstation deployment environments.
+                    </p>
+                    <div class="card-grid">
+                        <div class="info-card">
+                            <div class="card-title">🧠 Silent Memory Fallback</div>
+                            <div class="card-body">
+                                Captures memory OOM faults silently during primary LLM loads. Telemetry creates a warning trace, and the manager immediately mounts the lighter **Phi-3.1** backup model to guarantee system availability.
+                            </div>
+                        </div>
+                        <div class="info-card">
+                            <div class="card-title">📁 Chroma Metadata Omissions</div>
+                            <div class="card-body">
+                                ChromaDB does not accept <code>None</code> value inputs. Ingested Word documents (which contain no page numbers) omit the <code>page_number</code> key completely rather than passing a null reference, preventing index crashes.
+                            </div>
+                        </div>
+                        <div class="info-card">
+                            <div class="card-title">💾 In-Loop Database Commits</div>
+                            <div class="card-body">
+                                Structured ingestion tasks call transactional commits inside their iteration loops rather than in a batch block at completion. This enables gradual progress tracking metrics on dashboards.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SLIDE 4: KEY WORKSTATIONS -->
+                <div class="slide" data-slide-index="3">
+                    <span class="slide-tag">04. FUNCTIONAL MODULES</span>
+                    <h2 class="slide-title">Workstations Overview</h2>
+                    <p class="slide-desc">
+                        Four core workstations partition system capabilities to match secure IT operator tasks:
+                    </p>
+                    <div class="card-grid">
+                        <div class="info-card">
+                            <div class="card-title">1. Knowledge Curator</div>
+                            <div class="card-body">
+                                Accepts technical manuals in `.docx` and `.pdf` formats. Performs SHA-256 validation to avoid duplicates, splits text page-by-page, generates vectors, and manages physical folders (`/pending`, `/processed`, `/failed`).
+                            </div>
+                        </div>
+                        <div class="info-card">
+                            <div class="card-title">2. Single Triage & RAG Guidance</div>
+                            <div class="card-body">
+                                Allows searching for technical solutions. Performs similarity distance metric conversions, filters matching tickets by application (CMDB CI), discards low-confidence matches below threshold, and prompts the LLM to synthesize Markdown guides.
+                            </div>
+                        </div>
+                        <div class="info-card">
+                            <div class="card-title">3. Bulk Incident Triage</div>
+                            <div class="card-body">
+                                Asynchronously processes bulk lists of queries from uploaded CSV files (supporting up to 20 rows per batch) inside background tasks, updating progress bars and exporting output logs as CSV files.
+                            </div>
+                        </div>
+                        <div class="info-card">
+                            <div class="card-title">4. Macro Categorization Engine <span style="font-size: 9px; padding: 2px 6px; background-color: var(--warning); color: #000; border-radius: 4px; font-weight: bold; margin-left: 8px; vertical-align: middle;">WIP</span></div>
+                            <div class="card-body">
+                                Uses the local LLM in a background thread to map unclassified ticket descriptions to high-level taxonomies and extract error codes/messages. Features a dashboard with metrics, volume breakdown charts, and date filters. (Some changes required).
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SLIDE 5: INGESTION PIPELINE -->
+                <div class="slide" data-slide-index="4">
+                    <span class="slide-tag">05. INGESTION</span>
+                    <h2 class="slide-title">Ingestion & Vectorization Flow</h2>
+                    <p class="slide-desc">
+                        A robust, encoding-resilient data ingestion pipeline processes support CSV inputs to feed the local vector store.
+                    </p>
+                    <div class="content-grid-2">
+                        <div class="info-card">
+                            <div class="card-title">📊 Parse & Vectorize Sequence</div>
+                            <div class="card-body">
+                                <ul class="styled-list">
+                                    <li><strong>Encoding Cascade:</strong> Decodes bytes trying UTF-8 first, falling back to CP1252/Latin-1 to prevent crashes on Excel accented characters.</li>
+                                    <li><strong>Header Normalization:</strong> Maps variations like <code>close_notes</code> to standard schema column <code>closed_note</code>.</li>
+                                    <li><strong>Date Parsing:</strong> Supports formats: <code>DD-MM-YYYY HH:MM:SS AM/PM</code> and ISO/MySQL standard <code>YYYY-MM-DD HH:MM:SS</code>.</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="diagram-panel">
+                            <svg width="100%" height="100%" viewBox="0 0 450 350" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="10" y="150" width="90" height="50" rx="6" fill="#1e293b" stroke="#38bdf8" stroke-width="2"/>
+                                <text x="55" y="180" fill="#ffffff" font-size="11" font-weight="bold" text-anchor="middle">Upload CSV</text>
+                                
+                                <rect x="130" y="70" width="110" height="60" rx="6" fill="#1e1b4b" stroke="#4f46e5" stroke-width="2"/>
+                                <text x="185" y="100" fill="#ffffff" font-size="11" font-weight="bold" text-anchor="middle">Save DB</text>
+                                <text x="185" y="115" fill="#94a3b8" font-size="9" text-anchor="middle">Status: PENDING</text>
+
+                                <rect x="130" y="220" width="110" height="60" rx="6" fill="#0c4a6e" stroke="#0284c7" stroke-width="2"/>
+                                <text x="185" y="250" fill="#ffffff" font-size="11" font-weight="bold" text-anchor="middle">Worker Thread</text>
+                                <text x="185" y="265" fill="#94a3b8" font-size="9" text-anchor="middle">Propagate Trace</text>
+
+                                <rect x="270" y="220" width="80" height="60" rx="6" fill="#312e81" stroke="#4338ca" stroke-width="2"/>
+                                <text x="310" y="255" fill="#ffffff" font-size="11" font-weight="bold" text-anchor="middle">Embed</text>
+
+                                <rect x="375" y="220" width="65" height="60" rx="6" fill="#064e3b" stroke="#059669" stroke-width="2"/>
+                                <text x="407" y="250" fill="#ffffff" font-size="10" font-weight="bold" text-anchor="middle">Vector Index</text>
+                                <text x="407" y="265" fill="#94a3b8" font-size="8" text-anchor="middle">PROCESSED</text>
+
+                                <path d="M 100 175 L 115 175 L 115 100 L 130 100" stroke="#94a3b8" stroke-width="2"/>
+                                <path d="M 100 175 L 115 175 L 115 250 L 130 250" stroke="#94a3b8" stroke-width="2"/>
+                                <path d="M 240 250 L 270 250" stroke="#0284c7" stroke-width="2"/>
+                                <path d="M 350 250 L 375 250" stroke="#4338ca" stroke-width="2"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SLIDE 6: TRIAGE & RAG FLOWS -->
+                <div class="slide" data-slide-index="5">
+                    <span class="slide-tag">06. RETRIEVAL</span>
+                    <h2 class="slide-title">Search & RAG Synthesis</h2>
+                    <p class="slide-desc">
+                        Aura triages queries by matching incident patterns in vectorized documentation libraries before prompting GGUF models.
+                    </p>
+                    <div class="content-grid-2">
+                        <div class="info-card">
+                            <div class="card-title">🔍 Context Filtering Mechanics</div>
+                            <div class="card-body">
+                                <ul class="styled-list">
+                                    <li><strong>CMDB CI Pinning:</strong> Restricts vector search queries using metadata filters.</li>
+                                    <li><strong>L2 Score Conversions:</strong> Converts Euclidean distance metrics to confidence percentages.</li>
+                                    <li><strong>Threshold Discard:</strong> Discards reference segments scoring under the minimum confidence threshold to prevent hallucinated guides.</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="diagram-panel">
+                            <svg width="100%" height="100%" viewBox="0 0 450 350" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="10" y="150" width="80" height="50" rx="6" fill="#1e293b" stroke="#38bdf8" stroke-width="2"/>
+                                <text x="50" y="180" fill="#ffffff" font-size="11" font-weight="bold" text-anchor="middle">User Query</text>
+
+                                <rect x="110" y="145" width="110" height="60" rx="6" fill="#064e3b" stroke="#059669" stroke-width="2"/>
+                                <text x="165" y="175" fill="#ffffff" font-size="11" font-weight="bold" text-anchor="middle">Vector Query</text>
+                                <text x="165" y="190" fill="#6ee7b7" font-size="9" text-anchor="middle">CI pre-filtered</text>
+
+                                <rect x="240" y="70" width="100" height="60" rx="6" fill="#1e1b4b" stroke="#4f46e5" stroke-width="2"/>
+                                <text x="290" y="100" fill="#ffffff" font-size="11" font-weight="bold" text-anchor="middle">Deduplicate</text>
+                                <text x="290" y="115" fill="#94a3b8" font-size="9" text-anchor="middle">Top 5 Tickets</text>
+
+                                <rect x="240" y="220" width="100" height="60" rx="6" fill="#18181b" stroke="#52525b" stroke-width="2"/>
+                                <text x="290" y="250" fill="#ffffff" font-size="11" font-weight="bold" text-anchor="middle">RAG Prompt</text>
+                                <text x="290" y="265" fill="#d4d4d8" font-size="9" text-anchor="middle">Top 4 Chunks</text>
+
+                                <rect x="360" y="145" width="80" height="60" rx="6" fill="#0f172a" stroke="#475569" stroke-width="2"/>
+                                <text x="400" y="180" fill="#ffffff" font-size="11" font-weight="bold" text-anchor="middle">UI HTML</text>
+
+                                <path d="M 90 175 L 110 175" stroke="#38bdf8" stroke-width="2"/>
+                                <path d="M 220 175 L 230 175 L 230 100 L 240 100" stroke="#059669" stroke-width="2"/>
+                                <path d="M 220 175 L 230 175 L 230 250 L 240 250" stroke="#059669" stroke-width="2"/>
+                                <path d="M 340 100 L 350 100 L 350 175 L 360 175" stroke="#4f46e5" stroke-width="2"/>
+                                <path d="M 340 250 L 350 250 L 350 175 L 360 175" stroke="#52525b" stroke-width="2"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SLIDE 7: TELEMETRY TRACING -->
+                <div class="slide" data-slide-index="6">
+                    <span class="slide-tag">07. TELEMETRY</span>
+                    <h2 class="slide-title">Grouped Telemetry Logs & Observability</h2>
+                    <p class="slide-desc">
+                        A parent-child telemetry architecture logs transaction flows across threads to audit model performance without remote telemetry sinks.
+                    </p>
+                    <div class="content-grid-2">
+                        <div class="info-card">
+                            <div class="card-title">📊 OpenTelemetry Spans</div>
+                            <div class="card-body">
+                                <ul class="styled-list">
+                                    <li><strong>Trace ID Propagation:</strong> Passes IDs to background tasks to associate sub-spans with parent API transactions.</li>
+                                    <li><strong>Grouped Tables:</strong> Settings page renders parent rows that toggle to reveal nested sub-span logs.</li>
+                                    <li><strong>Structured CSV Export:</strong> Exports linked logs for easy parsing.</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="info-card" style="padding: 10px 15px;">
+                            <div style="font-size: 11px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px; border-bottom: 1px solid var(--border-color); padding-bottom: 4px;">Telemetry Logs View (Mockup)</div>
+                            <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                                <thead>
+                                    <tr style="border-bottom: 1px solid var(--border-color); text-align: left; color: var(--text-secondary);">
+                                        <th style="padding: 3px 0;">Event Name</th>
+                                        <th style="padding: 3px 0;">Duration</th>
+                                        <th style="padding: 3px 0;">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
+                                        <td style="padding: 4px 0; color: var(--text-primary); font-weight: 600;">▼ incident_ingestion</td>
+                                        <td style="padding: 4px 0;">24,510 ms</td>
+                                        <td style="padding: 4px 0; color: var(--success); font-weight: bold;">SUCCESS</td>
+                                    </tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.03); background-color: rgba(255,255,255,0.01);">
+                                        <td style="padding: 3px 0 3px 10px; color: var(--text-secondary);">└─ single_incident_vectorization (INC001)</td>
+                                        <td style="padding: 3px 0;">180 ms</td>
+                                        <td style="padding: 3px 0; color: var(--success);">SUCCESS</td>
+                                    </tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.03); background-color: rgba(255,255,255,0.01);">
+                                        <td style="padding: 3px 0 3px 10px; color: var(--text-secondary);">└─ single_incident_vectorization (INC002)</td>
+                                        <td style="padding: 3px 0;">195 ms</td>
+                                        <td style="padding: 3px 0; color: var(--success);">SUCCESS</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 4px 0; color: var(--text-primary); font-weight: 600;">▶ rag_query</td>
+                                        <td style="padding: 4px 0;">4,105 ms</td>
+                                        <td style="padding: 4px 0; color: var(--success); font-weight: bold;">SUCCESS</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. FOOTER CONTROLS -->
+    <footer>
+        <div class="progress-bar-container">
+            <div class="progress-bar-fill" id="progressBar"></div>
+        </div>
+        <div class="slide-counter" id="slideCounter">
+            Slide 1 of 7
+        </div>
+        <div class="deck-controls">
+            <button class="control-btn" id="prevBtn" disabled>
+                ◀ Previous
+            </button>
+            <button class="control-btn" id="nextBtn">
+                Next ▶
+            </button>
+        </div>
+    </footer>
+
+    <script>
+        // Slides configuration details matching Project Aura slides
+        const slidesData = [
+            { title: "Executive Summary" },
+            { title: "Technical Architecture" },
+            { title: "Design Decisions" },
+            { title: "Key Workstations" },
+            { title: "Ingestion Pipeline" },
+            { title: "Triage & RAG Flows" },
+            { title: "Telemetry Tracing" }
+        ];
+
+        let currentSlide = 0;
+        const totalSlides = slidesData.length;
+
+        // Elements
+        const slides = document.querySelectorAll('.slide');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const progressBar = document.getElementById('progressBar');
+        const slideCounter = document.getElementById('slideCounter');
+        const sidebarNav = document.getElementById('sidebarNav');
+        const themeBtn = document.getElementById('themeBtn');
+        const logoImg = document.getElementById('logoImg');
+
+        // Theme Toggle matching Project Aura colors and logo paths
+        themeBtn.addEventListener('click', () => {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const nextTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', nextTheme);
+            themeBtn.textContent = nextTheme === 'dark' ? '🌙 Dark Mode' : '☀️ Light Mode';
+            
+            // Switch logo image relative paths
+            if (nextTheme === 'dark') {
+                logoImg.src = "../app/static/logo_dark.png";
+            } else {
+                logoImg.src = "../app/static/logo.png";
+            }
+        });
+
+        // Initialize Sidebar Navigation items
+        function renderSidebar() {
+            sidebarNav.innerHTML = '';
+            slidesData.forEach((slide, index) => {
+                const navItem = document.createElement('button');
+                navItem.className = `nav-item ${index === currentSlide ? 'active' : ''}`;
+                navItem.innerHTML = `
+                    <span class="nav-num">${index + 1}</span>
+                    <span>${slide.title}</span>
+                `;
+                navItem.addEventListener('click', () => goToSlide(index));
+                sidebarNav.appendChild(navItem);
+            });
+        }
+
+        // Navigate to slide
+        function goToSlide(index) {
+            if (index < 0 || index >= totalSlides) return;
+
+            // Remove active classes
+            slides[currentSlide].classList.remove('active');
+            
+            // Set new index
+            currentSlide = index;
+
+            // Add active class
+            slides[currentSlide].classList.add('active');
+
+            // Update navigator buttons
+            prevBtn.disabled = currentSlide === 0;
+            nextBtn.disabled = currentSlide === totalSlides - 1;
+
+            // Update Progress Bar
+            const progressPct = ((currentSlide + 1) / totalSlides) * 100;
+            progressBar.style.width = `${progressPct}%`;
+
+            // Update Counter
+            slideCounter.textContent = `Slide ${currentSlide + 1} of ${totalSlides}`;
+
+            // Refresh Sidebar Active highlights
+            renderSidebar();
+        }
+
+        // Controls click triggers
+        prevBtn.addEventListener('click', () => goToSlide(currentSlide - 1));
+        nextBtn.addEventListener('click', () => goToSlide(currentSlide + 1));
+
+        // Keyboard navigations support
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === 'Space') {
+                e.preventDefault();
+                goToSlide(currentSlide + 1);
+            } else if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                goToSlide(currentSlide - 1);
+            }
+        });
+
+        // Initial Boot
+        renderSidebar();
+    </script>
+</body>
+</html>
